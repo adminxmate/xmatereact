@@ -1,38 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getHorses } from '../api/horseApi';
+import { fetchHorses } from '../api/horseApi';
 import _ from 'lodash';
 
 export const useInfiniteHorses = (searchTerm) => {
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const loadData = async (query, pageNum, append = false) => {
+    if (loading) return;
     setLoading(true);
-    try {
-      const result = await getHorses(query, pageNum);
-      const newItems = result.data || [];
-      
-      setData(prev => append ? [...prev, ...newItems] : newItems);
-      setHasMore(newItems.length === 50); // If less than 50, we've reached the end
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
+    
+    const result = await fetchHorses({ search: query, page: pageNum, limit: 50 });
+    
+    setItems(prev => append ? [...prev, ...result.data] : result.data);
+    setHasMore(result.data.length === 50);
+    setLoading(false);
   };
 
-  // Debounced search effect
-  useEffect(() => {
-    const debouncedSearch = _.debounce(() => {
+  // Debounced search to prevent API spamming
+  const debouncedSearch = useCallback(
+    _.debounce((query) => {
       setPage(1);
-      loadData(searchTerm, 1, false);
-    }, 500);
+      loadData(query, 1, false);
+    }, 500),
+    []
+  );
 
-    debouncedSearch();
-    return () => debouncedSearch.cancel();
-  }, [searchTerm]);
+  useEffect(() => {
+    debouncedSearch(searchTerm);
+  }, [searchTerm, debouncedSearch]);
 
   const fetchNextPage = () => {
     if (!loading && hasMore) {
@@ -42,5 +40,5 @@ export const useInfiniteHorses = (searchTerm) => {
     }
   };
 
-  return { data, loading, fetchNextPage, hasMore };
+  return { items, loading, fetchNextPage };
 };

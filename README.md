@@ -20,3 +20,4 @@ npm create vite@latest .
 npm install axios @tanstack/react-query lodash lucide-react
 npm install @tailwindcss/vite
 npx tailwindcss init -p
+npm install react-router-dom
