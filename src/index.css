@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* If you have any custom styles, add them below */
+:root {
+  background-color: #333538; /* Set the X-Mate grey globally */
+}
+
+body {
+  margin: 0;
+}
