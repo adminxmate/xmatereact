@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchHorses } from '../api/horseApi';
+import { searchHorses } from '../api/horseApi';
 import _ from 'lodash';
 
 export const useInfiniteHorses = (searchTerm) => {
@@ -12,7 +12,7 @@ export const useInfiniteHorses = (searchTerm) => {
     if (loading) return;
     setLoading(true);
     
-    const result = await fetchHorses({ search: query, page: pageNum, limit: 50 });
+    const result = await searchHorses({ search: query, page: pageNum, limit: 50 });
     
     setItems(prev => append ? [...prev, ...result.data] : result.data);
     setHasMore(result.data.length === 50);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { fetchHorses } from '../api/horseApi';
+import { getDetailedHorses } from '../api/horseApi';
 import { Pencil, Trash2, ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatDate } from '../utils/formatDate';
 
 const HorseDataTable = () => {
   const [horses, setHorses] = useState([]);
@@ -17,7 +18,7 @@ const HorseDataTable = () => {
     const load = async () => {
       setLoading(true);
       // Fetches based on primary Name search and Page
-      const res = await fetchHorses({ page, search: filters.name });
+      const res = await getDetailedHorses({ page, search: filters.name });
       setHorses(res.data);
       setTotalPages(res.lastPage);
       setLoading(false);
@@ -71,9 +72,9 @@ const HorseDataTable = () => {
                   filteredData.map(horse => (
                     <tr key={horse.id} className="hover:bg-white/5 transition border-b border-gray-900">
                       <td className="p-4 font-bold text-gray-200 uppercase text-xs">{horse.name}</td>
-                      <td className="p-4 text-gray-500 text-xs">{horse.foaling_date || 'N/A'}</td>
-                      <td className="p-4 text-gray-400 text-xs italic">{horse.sire || '---'}</td>
-                      <td className="p-4 text-gray-400 text-xs italic">{horse.dam || '---'}</td>
+                      <td className="p-4 text-gray-500 text-xs">{formatDate(horse.foalingDate) || 'N/A'}</td>
+                      <td className="p-4 text-gray-400 text-xs italic">{horse.sireName || '---'}</td>
+                      <td className="p-4 text-gray-400 text-xs italic">{horse.damName || '---'}</td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-3 text-gray-500">
                           <button className="hover:text-blue-400 transition"><Pencil size={16} /></button>
