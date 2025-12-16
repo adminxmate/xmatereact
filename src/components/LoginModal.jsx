@@ -3,7 +3,7 @@ import { verifyLogin } from '../services/authService';
 
 const LoginModal = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);  
   const [error, setError] = useState('');
   const [form, setForm] = useState({ username: '', password: '' });
 
