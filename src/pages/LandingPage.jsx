@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
-import HorseDropdown from "../components/search/HorseDropdown.jsx";
+import HorseDropdown from "../components/search/HorseDropdown";
 
 const LandingPage = () => {
   const navigate = useNavigate();
