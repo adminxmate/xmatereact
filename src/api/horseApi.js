@@ -1,15 +1,13 @@
-// src/api/horseApi.js (or services/horseApi.js)
-
-import axios from 'axios';
+import axios from "axios";
 
 const apiurl = import.meta.env.VITE_API_URL;
 
 const API = axios.create({
-  baseURL: `${apiurl}api/v1`, // e.g., http://localhost:5000/api/v1
+  baseURL: `${apiurl}api/v1`,
 });
 
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -24,10 +22,8 @@ API.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Trigger login modal
-      window.dispatchEvent(new CustomEvent('open-login-modal'));
+      window.dispatchEvent(new CustomEvent("open-login-modal"));
 
-      // Wait for new token after successful login
       const newToken = await waitForToken();
 
       if (newToken) {
@@ -43,21 +39,17 @@ API.interceptors.response.use(
 function waitForToken() {
   return new Promise((resolve) => {
     const onLogin = () => {
-      const token = localStorage.getItem('token');
-      window.removeEventListener('login-success', onLogin);
+      const token = localStorage.getItem("token");
+      window.removeEventListener("login-success", onLogin);
       resolve(token);
     };
-    window.addEventListener('login-success', onLogin);
+    window.addEventListener("login-success", onLogin);
   });
 }
 
-/**
- * Search horses with server-side filtering and pagination
- * Used for dropdown search + infinite scroll
- */
-export const searchHorses = async ({ query = '', page = 1, limit = 50 }) => {
+export const searchHorses = async ({ query = "", page = 1, limit = 50 }) => {
   try {
-    const response = await API.get('/horsesearh', { // Fixed typo: horsesearh → horsesearch
+    const response = await API.get("/horsesearch", {
       params: {
         search: query.trim(),
         page,
@@ -65,30 +57,44 @@ export const searchHorses = async ({ query = '', page = 1, limit = 50 }) => {
       },
     });
 
-    // Adjust based on your actual API response structure
-    // Common patterns: response.data.data or response.data.results
     const payload = response.data;
 
     let horses = [];
     let lastPage = 1;
 
     if (payload?.data?.data) {
-      // Laravel-style paginated response
       horses = payload.data.data;
-      lastPage = payload.data.last_page || 1;
-    } else if (payload?.data) {
+      lastPage = payload.data.last_page || payload.data.total_pages || 1;
+    } else if (payload?.data && payload?.last_page) {
+      horses = payload.data;
+      lastPage = payload.last_page;
+    } else if (payload?.data && Array.isArray(payload.data)) {
       horses = payload.data;
       lastPage = payload.last_page || payload.total_pages || 1;
     } else if (Array.isArray(payload)) {
       horses = payload;
+      lastPage = 1;
     }
 
-    // Normalize horse objects
-    const normalizedHorses = horses.map((h) => ({
-      id: h.id,
-      name: h.name?.trim(),
-      foalingDate: h.foaling_date || h.foalingDate || null,
-    }));
+    const normalizedHorses = horses
+      .map((horse) => {
+        let year = null;
+        const rawDate = horse.foaling_date || horse.foalingDate || horse.year || null;
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            year = d.getFullYear();
+          } else if (/^\d{4}$/.test(rawDate)) {
+            year = parseInt(rawDate, 10);
+          }
+        }
+        return {
+          id: horse.id || horse._id,
+          name: (horse.name || horse.horse_name || "").trim(),
+          foalingYear: year,
+        };
+      })
+      .filter((h) => h.name);
 
     return {
       data: normalizedHorses,
@@ -96,7 +102,7 @@ export const searchHorses = async ({ query = '', page = 1, limit = 50 }) => {
       hasMore: page < lastPage,
     };
   } catch (error) {
-    console.error('Horse search failed:', error);
+    console.error("Horse search failed:", error);
     return {
       data: [],
       lastPage: 1,
@@ -105,12 +111,9 @@ export const searchHorses = async ({ query = '', page = 1, limit = 50 }) => {
   }
 };
 
-/**
- * Optional: If you have a separate detailed list endpoint
- */
-export const getDetailedHorses = async ({ page = 1, limit = 10, search = '' }) => {
+export const getDetailedHorses = async ({ page = 1, limit = 10, search = "" }) => {
   try {
-    const response = await API.get('/horses', {
+    const response = await API.get("/horses", {
       params: { page, limit, search },
     });
 
@@ -120,9 +123,13 @@ export const getDetailedHorses = async ({ page = 1, limit = 10, search = '' }) =
 
     if (payload?.data?.data) {
       horses = payload.data.data;
-      lastPage = payload.data.last_page;
+      lastPage = payload.data.last_page || 1;
     } else if (payload?.data) {
       horses = payload.data;
+      lastPage = payload.last_page || payload.total_pages || 1;
+    } else if (Array.isArray(payload)) {
+      horses = payload;
+      lastPage = 1;
     }
 
     return {
@@ -131,7 +138,7 @@ export const getDetailedHorses = async ({ page = 1, limit = 10, search = '' }) =
       hasMore: page < lastPage,
     };
   } catch (error) {
-    console.error('Detailed horses fetch failed:', error);
+    console.error("Detailed horses fetch failed:", error);
     return { data: [], lastPage: 1, hasMore: false };
   }
 };
