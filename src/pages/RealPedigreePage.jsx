@@ -18,9 +18,7 @@ const RealPedigreePage = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get(
-          `https://haves.co.in/api/v1/horses/real?horseid=${horseId}&gen=${gen}`
-        );
+        const response = await axios.get(`https://haves.co.in/api/v1/horses/real?horseid=${horseId}&gen=${gen - 1}`);
         setPedigree(response.data);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -43,21 +41,17 @@ const RealPedigreePage = () => {
   const renderCell = (horse, genLevel, totalGen) => {
     if (!horse) return null;
     const rowspan = Math.pow(2, totalGen - genLevel - 1);
+    const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;
     return (
-      <td
-        rowSpan={rowspan}
-        className="border px-4 py-2 text-center align-middle bg-gray-900/70"
-      >
+      <td key={key} rowSpan={rowspan} className="border px-4 py-2 text-center align-middle bg-gray-900/70">
         <div className="font-bold">{horse.name || "Unknown"}</div>
         <div className="text-xs text-gray-400">
-          {horse.sex}{" "}
-          {horse.dob ? `(${new Date(horse.dob).getFullYear()})` : ""}
+          {horse.sex} {horse.dob ? `(${new Date(horse.dob).getFullYear()})` : ""}
         </div>
       </td>
     );
   };
 
-  // Build rows column‑wise
   const buildRows = (pedigreeLevels) => {
     const totalGen = pedigreeLevels.length;
     const totalRows = Math.pow(2, totalGen - 1);
@@ -77,17 +71,16 @@ const RealPedigreePage = () => {
 
   return (
     <MainLayout>
-      <main className="min-h-screen bg-black text-white py-12 px-4">
+      <section className="min-h-screen text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-bold text-center mb-8">
-            Classic Pedigree Tree (Horse ID: {horseId}, Gen: {gen})
-          </h1>
-
-          {loading && (
-            <div className="text-center text-xl text-yellow-400">
-              Loading data from API...
-            </div>
-          )}
+          <div className="text-center mb-12">
+            <h1 horseid={horseId} className="text-4xl font-bold text-center mb-8">
+              {pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse"}
+              <br />
+              <span>(Generation: {gen})</span>
+            </h1>
+          </div>
+          {loading && <div className="text-center text-xl text-yellow-400">Loading data from API...</div>}
 
           {error && (
             <div className="bg-red-900/50 border border-red-600 rounded-lg p-6 text-center">
@@ -104,7 +97,7 @@ const RealPedigreePage = () => {
             </div>
           )}
         </div>
-      </main>
+      </section>
     </MainLayout>
   );
 };

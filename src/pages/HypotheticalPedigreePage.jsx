@@ -33,7 +33,6 @@ const HypotheticalPedigreePage = () => {
     fetchPedigree();
   }, [sireId, damId, gen]);
 
-  // Render a horse cell with correct rowspan
   const renderCell = (horse, genLevel, totalGen, cellIndex) => {
     const rowspan = Math.pow(2, totalGen - genLevel - 1);
     const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;
@@ -54,7 +53,6 @@ const HypotheticalPedigreePage = () => {
     );
   };
 
-  // Build rows column‑wise from pedigreeLevels array
   const buildRows = (pedigreeLevels) => {
     const totalGen = pedigreeLevels.length;
     const totalRows = Math.pow(2, totalGen - 1);
@@ -65,7 +63,6 @@ const HypotheticalPedigreePage = () => {
       let rowIndex = 0;
 
       generation.forEach((horse) => {
-        // Ensure the row exists before pushing
         if (!rows[rowIndex]) {
           rows[rowIndex] = [];
         }
@@ -79,21 +76,24 @@ const HypotheticalPedigreePage = () => {
 
   return (
     <MainLayout>
-      <main className="min-h-screen bg-black text-white py-12 px-4">
+      <main className="min-h-screen text-white py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4">Hypothetical Pedigree</h1>
-            <p className="text-xl text-gray-400">
-              Sire ID: <span className="text-white">{sireId}</span> × Dam ID: <span className="text-white">{damId}</span>
-            </p>
-            <p className="text-lg text-gray-500 mt-2">Generation {gen}</p>
+            <h1 className="text-5xl font-bold mb-4">
+              <span horseid="{sireId}" className="text-white">
+                {pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse"}
+              </span>{" "}
+              -{" "}
+              <span horseid="{damId}" className="text-white">
+                {pedigree?.pedigree?.[0]?.[1]?.name || "Unknown Horse"}
+              </span>
+              <br />
+              <span>(Generation: {gen})</span>
+            </h1>
           </div>
 
-          {/* Loading */}
           {loading && <div className="text-center text-2xl text-yellow-400">Loading hypothetical pedigree...</div>}
 
-          {/* Error */}
           {error && (
             <div className="text-center bg-red-900/50 border-2 border-red-600 rounded-xl p-8 max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold text-red-400 mb-4">Error</h2>
@@ -101,7 +101,6 @@ const HypotheticalPedigreePage = () => {
             </div>
           )}
 
-          {/* Classic Pedigree Table */}
           {!loading && !error && pedigree && pedigree.pedigree && (
             <div className="overflow-x-auto">
               <table className="table-auto border-collapse border border-gray-700 w-full">
@@ -109,8 +108,6 @@ const HypotheticalPedigreePage = () => {
               </table>
             </div>
           )}
-
-          {/* Fallback */}
           {!loading && !error && pedigree && !pedigree.pedigree && <div className="text-center text-gray-400 text-xl">No pedigree data available for the selected generation.</div>}
         </div>
       </main>
