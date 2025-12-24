@@ -19,7 +19,6 @@ const Header = () => {
       </div>
       <div className="flex gap-6 text-[13px] font-bold">
         <button onClick={() => navigate('/')} className="text-[#e23e44]">HOME</button>
-        <button onClick={() => navigate('/pedigree?horseid=528492&gen=5')}>pedigree</button>
         <button className="hover:text-gray-400 uppercase">Pricing</button>
         <button className="hover:text-gray-400 uppercase">Signup</button>
         <button className="hover:text-gray-400 uppercase">Login</button>
