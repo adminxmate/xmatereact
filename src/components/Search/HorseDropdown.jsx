@@ -10,9 +10,9 @@ const HorseDropdown = ({ value, onChange, placeholder }) => {
     });
 
     const options = data.map((horse) => ({
-      value: horse.id, // 👈 use horse.id here
+      value: horse.id,
       label: horse.foalingYear ? `${horse.name} (${horse.foalingYear})` : horse.name,
-      horse, // 👈 keep full horse object if you want extra info later
+      horse,
     }));
 
     return {
@@ -26,13 +26,9 @@ const HorseDropdown = ({ value, onChange, placeholder }) => {
 
   return (
     <AsyncPaginate
-      value={
-        value
-          ? { value: value.id, label: value.label }
-          : null
-      }
+      value={value ? { value: value.id, label: value.label } : null}
       loadOptions={loadOptions}
-      onChange={(selected) => onChange(selected ? selected : null)} // 👈 pass full selected option
+      onChange={(selected) => onChange(selected ? selected : null)}
       placeholder={placeholder}
       isClearable
       additional={{ page: 1 }}

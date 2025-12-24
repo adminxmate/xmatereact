@@ -17,18 +17,8 @@ const LandingPage = () => {
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-[2]">
-                          <HorseDropdown
-              value={realHorse}
-              onChange={(selected) => {
-                console.log("Horse ID:", selected?.value);   // ✅ horseid
-                console.log("Horse Name:", selected?.horse?.name); // ✅ horse name
-                setRealHorse(selected);
-              }}
-              placeholder="Horse Name"
-            />
-            </div>
-
-            
+              <HorseDropdown value={realHorse} onChange={setRealHorse} placeholder="Horse Name" />
+            </div>            
             <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} className="flex-[1.5] p-3.5 bg-white text-black rounded outline-none" />
             <button
               onClick={() => navigate(`/realpedigree?horseid=${realHorse?.value}&email=${encodeURIComponent(email)}`)}
@@ -46,11 +36,11 @@ const LandingPage = () => {
             </div>
 
             <div className="flex-1">
-              <HorseDropdown value={dam} onChange={setDam} placeholder="Dam Name" />
+              <HorseDropdown value={dam}  onChange={setDam} placeholder="Dam Name" />
             </div>
             <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} className="flex-1 p-3.5 bg-white text-black rounded outline-none" />
             <button
-              onClick={() => navigate(`/hypopedigree?sireid=${sire?.id}&damid=${dam?.id}&email=${encodeURIComponent(email)}`)}
+              onClick={() => navigate(`/hypotheticalpedigree?sireid=${sire?.value}&damid=${dam?.value}&email=${encodeURIComponent(email)}`)}
               className="flex-1 bg-[#e23e44] italic hover:bg-[#c13238] py-3.5 rounded font-bold flex items-center justify-center gap-2 transition"
             >
               <Play className="fill-white" size={16} /> Hypothetical Pedigree
