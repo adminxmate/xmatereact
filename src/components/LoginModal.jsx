@@ -3,12 +3,16 @@ import { verifyLogin } from '../services/authService';
 
 const LoginModal = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openReason, setOpenReason] = useState(null);
   const [loading, setLoading] = useState(false);  
   const [error, setError] = useState('');
   const [form, setForm] = useState({ username: '', password: '' });
 
   useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
+    const handleOpen = (e) => {
+      setIsOpen(true);
+      setOpenReason(e.detail?.reason || "auto");
+    };
     window.addEventListener('open-login-modal', handleOpen);
     return () => window.removeEventListener('open-login-modal', handleOpen);
   }, []);
@@ -21,22 +25,38 @@ const LoginModal = () => {
     const result = await verifyLogin(form.username, form.password);
 
     if (result.success) {
-      setIsOpen(false); // Close modal on success
+      setIsOpen(false);
       setForm({ username: '', password: '' });
+      setOpenReason(null);
     } else {
       setError(result.message);
     }
     setLoading(false);
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    setOpenReason(null);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden relative">
+        
+        {openReason === "manual" && (
+          <button
+            onClick={handleClose}
+            className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
+          >
+            ✕
+          </button>
+        )}
+
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-slate-800">Authentication Required</h2>
-          <p className="mt-2 text-sm text-slate-500">Your session has expired. Please log in to continue.</p>
+          <h2 className="text-2xl font-bold text-slate-800">Sign In</h2>
+          <p className="mt-2 text-sm text-slate-500">Authentication Required. Please log in to continue.</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
