@@ -84,11 +84,11 @@ const LandingPage = () => {
                 setRealError(""); // Clear error on typing
                 setHypoError("");
               }}
-              className="flex-[1.5] p-3.5 bg-white text-black rounded outline-none"
+              className="flex-[1.5] p-3 bg-white text-black rounded outline-none"
             />
             <button
               onClick={handleRealPedigree}
-              className="flex-1 bg-[#e23e44] hover:bg-[#c13238] py-3.5 rounded font-bold flex items-center justify-center gap-2 transition"
+              className="flex-1 bg-[#e23e44] hover:bg-[#c13238] py-3 rounded font-bold flex items-center justify-center gap-2 transition"
             >
               <Play className="fill-white" size={16} /> Real Pedigree
             </button>
@@ -114,11 +114,11 @@ const LandingPage = () => {
                 setHypoError(""); // Clear error on typing
                 setRealError("");
               }}
-              className="flex-1 p-3.5 bg-white text-black rounded outline-none"
+              className="flex-1 p-3 bg-white text-black rounded outline-none"
             />
             <button
               onClick={handleHypotheticalPedigree}
-              className="flex-1 bg-[#e23e44] italic hover:bg-[#c13238] py-3.5 rounded font-bold flex items-center justify-center gap-2 transition"
+              className="flex-1 bg-[#e23e44] italic hover:bg-[#c13238] py-3 rounded font-bold flex items-center justify-center gap-2 transition"
             >
               <Play className="fill-white" size={16} /> Hypothetical Pedigree
             </button>
