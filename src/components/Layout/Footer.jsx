@@ -38,8 +38,8 @@ const Footer = () => {
                 </ul>
                 <ul className="flex justify-center sm:justify-start gap-4">
                   <li>
-                    <a href="#" className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white">
-                      More Info
+                    <a href="/plans" className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white">
+                      Pricing
                     </a>
                   </li>
                   <li>
