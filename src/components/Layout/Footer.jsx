@@ -27,7 +27,7 @@ const Footer = () => {
               </div>
               <div className="sm:w-3/4 p-8 sm:pt-1">
                 <h5 className="text-white text-center text-lg sm:text-left mb-2">
-                  Help us:
+                  Help-us :
                 </h5>
                 <ul className="flex flex-wrap justify-center sm:justify-start gap-4 mb-6">
                   <li>

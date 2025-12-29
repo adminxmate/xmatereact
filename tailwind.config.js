@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+/** @type {import('tailwindcss').Config} **/
 export default {
   content: [
     "./index.html",
@@ -8,14 +8,21 @@ export default {
     extend: {
       colors: {
         brand: {
-          red: '#e23e44',     // Main button red
-          redHover: '#c13238',// Darker red for hover states
-          dark: '#333538',    // Page background grey
-          card: '#111111',    // Input container background
+          red: '#e23e44',
+          redHover: '#c13238',
+          dark: '#333538',
+          card: '#111111',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'], // Professional clean font
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      screens: {
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px"
       }
     },
   },
