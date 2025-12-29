@@ -10,7 +10,7 @@ const Footer = () => {
       >
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center border-b border-gray-800">
           <div className="pt-3 pb-4 mx-auto w-full max-w-[480px]">
-            <div className="flex flex-wrap justify-center items-center h-32 ">
+            <div className="flex flex-wrap justify-center items-center">
               <div className="sm:w-1/4 flex flex-wrap justify-center text-center p-8">
                 <figure className="w-14 h-14 flex flex-col items-center justify-center bg-[#111]">
                   <img
@@ -25,7 +25,7 @@ const Footer = () => {
                   </figcaption>
                 </figure>
               </div>
-              <div className="sm:w-3/4 p-8">
+              <div className="sm:w-3/4 p-8 sm:pt-1">
                 <h5 className="text-white text-center text-lg sm:text-left mb-2">
                   Help us:
                 </h5>
