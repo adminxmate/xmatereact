@@ -34,25 +34,26 @@ const HypotheticalPedigreePage = () => {
   }, [sireId, damId, gen]);
 
   const renderCell = (horse, genLevel, totalGen, cellIndex) => {
+    console.log('h-', horse, 'id-',cellIndex+1);
     const rowspan = Math.pow(2, totalGen - genLevel - 1);
-    const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;
+    const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;    
+    const horsedetails = `${horse.sex}-${horse.dob ? new Date(horse.dob).getFullYear() : ''}`;
+    const tdclass = `px-4 py-2 text-left align-middle ${horse.generation === 0 ? '' : horse.relationType === 'dam' ? 'borderbottom' : 'borderleft'}` ;
     if (!horse) {
       return (
-        <td key={key} rowSpan={rowspan} className="border px-4 py-2 text-center align-middle bg-gray-800/40 text-gray-500 italic">
+        <td key={key} rowSpan={rowspan} class="border px-4 py-2 text-center align-middle bg-gray-800/40 text-gray-500 italic">
           —
         </td>
       );
     }
     return (
-      <td key={key} rowSpan={rowspan} className="border px-4 py-2 text-center align-middle bg-gray-900/70">
-        <div className="font-bold">{horse.name || "Unknown"}</div>
-        <div className="text-xs text-gray-400">
-          {horse.sex || ""} {horse.dob ? `(${new Date(horse.dob).getFullYear()})` : ""}
-        </div>
+      <td key={key} rowSpan={rowspan} className={tdclass}>
+        <div className="font-bold" data-id={horse.id} data-d={horsedetails}>{horse.name || "Unknown"}</div>
       </td>
     );
   };
 
+  
   const buildRows = (pedigreeLevels) => {
     const totalGen = pedigreeLevels.length;
     const totalRows = Math.pow(2, totalGen - 1);
@@ -62,11 +63,11 @@ const HypotheticalPedigreePage = () => {
       const span = Math.pow(2, totalGen - genLevel - 1);
       let rowIndex = 0;
 
-      generation.forEach((horse) => {
+      generation.forEach((horse, cellIndex) => {
         if (!rows[rowIndex]) {
           rows[rowIndex] = [];
         }
-        rows[rowIndex].push(renderCell(horse, genLevel, totalGen));
+        rows[rowIndex].push(renderCell(horse, genLevel, totalGen, cellIndex));
         rowIndex += span;
       });
     });
@@ -103,7 +104,7 @@ const HypotheticalPedigreePage = () => {
 
           {!loading && !error && pedigree && pedigree.pedigree && (
             <div className="overflow-x-auto">
-              <table className="table-auto border-collapse border border-gray-700 w-full">
+              <table className="pedigree-table table-auto border-collapse bg-white text-black border border-gray-700 w-full">
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
             </div>

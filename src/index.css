@@ -1,10 +1,54 @@
 @import "tailwindcss";
 
-/* If you have any custom styles, add them below */
 :root {
-  background-color: #333538; /* Set the X-Mate grey globally */
+  background-color: #333538;
 }
 
 body {
   margin: 0;
 }
+
+.pedigree-table {
+  position: relative;
+  z-index: 1;
+}
+.pedigree-table::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 60px;
+  width: 100px;
+  height: 100px;
+  background: url("../logo.png") no-repeat center center;
+  background-size: contain;
+  opacity: 0.1;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+}
+
+.pedigree-table .borderleft,
+.pedigree-table .borderbottom {
+  position: relative;
+}
+
+.pedigree-table .borderleft::before,
+.pedigree-table .borderbottom::before {
+  content: "";
+  position: absolute;
+  background: black;
+}
+
+.pedigree-table .borderleft::before {
+  top: 50%;
+  height: 100%;
+  left: 0;
+  width: 1px;
+}
+
+.pedigree-table .borderbottom::before { 
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+}
+

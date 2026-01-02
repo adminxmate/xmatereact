@@ -6,22 +6,24 @@ import HorseDropdown from "../components/Search/HorseDropdown";
 
 const LandingPage = () => {
   const navigate = useNavigate();
-
+  
+  // State for Selection
   const [realHorse, setRealHorse] = useState(null);
   const [sire, setSire] = useState(null);
   const [dam, setDam] = useState(null);
-  const [email, setEmail] = useState("");
 
-  // Separate error messages for each section
+  // Split Email States to work separately
+  const [realEmail, setRealEmail] = useState("");
+  const [hypoEmail, setHypoEmail] = useState("");
+
+  // Error States
   const [realError, setRealError] = useState("");
   const [hypoError, setHypoError] = useState("");
 
-  // Robust email validation regex
-  const validateEmail = (email) => {
-    const trimmed = email.trim();
+  const validateEmail = (emailToValidate) => {
+    const trimmed = emailToValidate.trim();
     if (!trimmed) return { valid: false, message: "Email is required." };
 
-    // Standard regex for email validation (RFC-compliant enough for UI)
     const regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!regex.test(trimmed)) {
       return { valid: false, message: "Please enter a valid email address." };
@@ -36,7 +38,8 @@ const LandingPage = () => {
       return;
     }
 
-    const { valid, message } = validateEmail(email);
+    // Validate using realEmail specifically
+    const { valid, message } = validateEmail(realEmail);
     if (!valid) {
       setRealError(message);
       setHypoError(""); // Clear other error
@@ -44,7 +47,7 @@ const LandingPage = () => {
     }
 
     setRealError("");
-    navigate(`/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(email.trim())}`);
+    navigate(`/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(realEmail.trim())}`);
   };
 
   const handleHypotheticalPedigree = () => {
@@ -53,7 +56,8 @@ const LandingPage = () => {
       return;
     }
 
-    const { valid, message } = validateEmail(email);
+    // Validate using hypoEmail specifically
+    const { valid, message } = validateEmail(hypoEmail);
     if (!valid) {
       setHypoError(message);
       setRealError(""); // Clear other error
@@ -62,14 +66,15 @@ const LandingPage = () => {
 
     setHypoError("");
     navigate(
-      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(email.trim())}`
+      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(hypoEmail.trim())}`
     );
   };
 
   return (
     <MainLayout>
       <section className="w-full flex-grow flex flex-col items-center justify-center p-6 space-y-8">
-        {/* Real Pedigree Section */}
+        
+        {/* Section 1: Real Pedigree */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-[2]">
@@ -78,11 +83,10 @@ const LandingPage = () => {
             <input
               type="email"
               placeholder="Email Address"
-              value={email}
+              value={realEmail}
               onChange={(e) => {
-                setEmail(e.target.value);
-                setRealError(""); // Clear error on typing
-                setHypoError("");
+                setRealEmail(e.target.value);
+                setRealError("");
               }}
               className="flex-[1.5] p-3 bg-white text-black rounded outline-none"
             />
@@ -96,7 +100,7 @@ const LandingPage = () => {
           {realError && <p className="text-red-500 text-sm mt-2 ml-1">{realError}</p>}
         </div>
 
-        {/* Hypothetical Pedigree Section */}
+        {/* Section 2: Hypothetical Pedigree */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1">
@@ -108,11 +112,10 @@ const LandingPage = () => {
             <input
               type="email"
               placeholder="Email Address"
-              value={email}
+              value={hypoEmail}
               onChange={(e) => {
-                setEmail(e.target.value);
-                setHypoError(""); // Clear error on typing
-                setRealError("");
+                setHypoEmail(e.target.value);
+                setHypoError("");
               }}
               className="flex-1 p-3 bg-white text-black rounded outline-none"
             />
