@@ -7,16 +7,13 @@ import HorseDropdown from "../components/Search/HorseDropdown";
 const LandingPage = () => {
   const navigate = useNavigate();
   
-  // State for Selection
   const [realHorse, setRealHorse] = useState(null);
   const [sire, setSire] = useState(null);
   const [dam, setDam] = useState(null);
 
-  // Split Email States to work separately
   const [realEmail, setRealEmail] = useState("");
   const [hypoEmail, setHypoEmail] = useState("");
 
-  // Error States
   const [realError, setRealError] = useState("");
   const [hypoError, setHypoError] = useState("");
 
@@ -37,17 +34,15 @@ const LandingPage = () => {
       setRealError("Please select a horse.");
       return;
     }
-
-    // Validate using realEmail specifically
     const { valid, message } = validateEmail(realEmail);
     if (!valid) {
       setRealError(message);
-      setHypoError(""); // Clear other error
+      setHypoError("");
       return;
     }
 
     setRealError("");
-    navigate(`/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(realEmail.trim())}`);
+    navigate(`/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(realEmail.trim())}&gen=3`);
   };
 
   const handleHypotheticalPedigree = () => {
@@ -56,17 +51,16 @@ const LandingPage = () => {
       return;
     }
 
-    // Validate using hypoEmail specifically
     const { valid, message } = validateEmail(hypoEmail);
     if (!valid) {
       setHypoError(message);
-      setRealError(""); // Clear other error
+      setRealError("");
       return;
     }
 
     setHypoError("");
     navigate(
-      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(hypoEmail.trim())}`
+      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(hypoEmail.trim())}&gen=3`
     );
   };
 
@@ -74,7 +68,6 @@ const LandingPage = () => {
     <MainLayout>
       <section className="w-full flex-grow flex flex-col items-center justify-center p-6 space-y-8">
         
-        {/* Section 1: Real Pedigree */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-[2]">
@@ -100,7 +93,6 @@ const LandingPage = () => {
           {realError && <p className="text-red-500 text-sm mt-2 ml-1">{realError}</p>}
         </div>
 
-        {/* Section 2: Hypothetical Pedigree */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1">

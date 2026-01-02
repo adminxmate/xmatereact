@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 
 const HypotheticalPedigreePage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const sireId = searchParams.get("sireid") || "497875";
-  const damId = searchParams.get("damid") || "376952";
+  const sireId = searchParams.get("sireid");
+  const damId = searchParams.get("damid");
+
+  useEffect(() => {
+    if (!sireId || !damId) {
+      navigate("/", { replace: true });
+    }
+  }, [sireId, damId, navigate]);
   const gen = Math.min(parseInt(searchParams.get("gen")) || 3);
 
   const [pedigree, setPedigree] = useState(null);
@@ -23,8 +29,7 @@ const HypotheticalPedigreePage = () => {
         setPedigree(response.data);
       } catch (err) {
         console.error("Hypothetical pedigree fetch error:", err);
-        const msg = err.response?.data?.error || err.message || "Unknown error";
-        setError(`Failed to load hypothetical pedigree: ${msg}`);
+        setError(err.response?.data?.error || err.message || "Failed to load hypothetical pedigree");
       } finally {
         setLoading(false);
       }
@@ -33,12 +38,16 @@ const HypotheticalPedigreePage = () => {
     fetchPedigree();
   }, [sireId, damId, gen]);
 
+  const handleGenChange = (newGen) => {
+    setSearchParams({ sireid: sireId, damid: damId, gen: newGen });
+  };
+
   const renderCell = (horse, genLevel, totalGen, cellIndex) => {
-    console.log('h-', horse, 'id-',cellIndex+1);
+    const bgClass = horse.isDuplicate ? horse.color : "";
     const rowspan = Math.pow(2, totalGen - genLevel - 1);
-    const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;    
-    const horsedetails = `${horse.sex}-${horse.dob ? new Date(horse.dob).getFullYear() : ''}`;
-    const tdclass = `px-4 py-2 text-left align-middle ${horse.generation === 0 ? '' : horse.relationType === 'dam' ? 'borderbottom' : 'borderleft'}` ;
+    const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;
+    const horsedetails = `${horse.sex}-${horse.dob ? new Date(horse.dob).getFullYear() : ""}`;
+    const tdclass = `p-1 text-left align-middle ${horse.generation === 0 ? "" : horse.relationType === "dam" ? "borderbottom" : "borderleft"}`;
     if (!horse) {
       return (
         <td key={key} rowSpan={rowspan} class="border px-4 py-2 text-center align-middle bg-gray-800/40 text-gray-500 italic">
@@ -48,12 +57,13 @@ const HypotheticalPedigreePage = () => {
     }
     return (
       <td key={key} rowSpan={rowspan} className={tdclass}>
-        <div className="font-bold" data-id={horse.id} data-d={horsedetails}>{horse.name || "Unknown"}</div>
+        <div className="font-bold" style={{ backgroundColor: bgClass }} data-id={horse.id} data-d={horsedetails}>
+          {horse.name || "Unknown"}
+        </div>
       </td>
     );
   };
 
-  
   const buildRows = (pedigreeLevels) => {
     const totalGen = pedigreeLevels.length;
     const totalRows = Math.pow(2, totalGen - 1);
@@ -88,9 +98,21 @@ const HypotheticalPedigreePage = () => {
               <span horseid="{damId}" className="text-white">
                 {pedigree?.pedigree?.[0]?.[1]?.name || "Unknown Horse"}
               </span>
-              <br />
-              <span>(Generation: {gen})</span>
             </h1>
+
+            <div className="flex justify-center gap-2 mt-4">
+              {[3, 4, 5, 6].map((g) => (
+                <button
+                  key={g}
+                  onClick={() => handleGenChange(g)}
+                  className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${
+                    gen === g ? "bg-red-600 text-white scale-110 shadow-lg shadow-red-900/20" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  }`}
+                >
+                  {g} GENERATIONS
+                </button>
+              ))}
+            </div>
           </div>
 
           {loading && <div className="text-center text-2xl text-yellow-400">Loading hypothetical pedigree...</div>}

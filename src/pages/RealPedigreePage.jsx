@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 
 const RealPedigreePage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate(); // Initialize navigate
 
-  const horseId = searchParams.get("horseid") || "528492";
+  const horseId = searchParams.get("horseid");
+  useEffect(() => {
+    if (!horseId) {
+      navigate("/", { replace: true });
+    }
+  }, [horseId, navigate]);
   const gen = parseInt(searchParams.get("gen")) || 3;
 
   const [pedigree, setPedigree] = useState(null);
@@ -22,13 +28,7 @@ const RealPedigreePage = () => {
         setPedigree(response.data);
       } catch (err) {
         console.error("Fetch error:", err);
-        let errMsg = "Failed to load data.";
-        if (err.response?.data?.error) {
-          errMsg = err.response.data.error;
-        } else if (err.message) {
-          errMsg += ` ${err.message}`;
-        }
-        setError(errMsg);
+        setError(err.response?.data?.error || err.message || "Failed to load real pedigree");
       } finally {
         setLoading(false);
       }
@@ -37,15 +37,22 @@ const RealPedigreePage = () => {
     fetchPedigree();
   }, [horseId, gen]);
 
+  const handleGenChange = (newGen) => {
+    setSearchParams({ horseid: horseId, gen: newGen });
+  };
+
   const renderCell = (horse, genLevel, totalGen, cellIndex) => {
     if (!horse) return null;
+    const bgClass = horse.isDuplicate ? horse.color : "";
     const rowspan = Math.pow(2, totalGen - genLevel - 1);
     const key = horse?.id ? `${horse.id}-${genLevel}` : `empty-${genLevel}-${cellIndex}`;
-    const horsedetails = `${horse.sex}-${horse.dob ? new Date(horse.dob).getFullYear() : ''}`;    
-    const tdclass = `px-4 py-2 text-left align-middle ${horse.generation === 0 ? '' : horse.relationType === 'dam' ? 'borderbottom' : 'borderleft'}` ;
+    const horsedetails = `${horse.sex}-${horse.dob ? new Date(horse.dob).getFullYear() : ""}`;
+    const tdclass = `p-1 text-left align-middle ${horse.color ? `bg-${horse.color}` : ""} ${horse.generation === 0 ? "" : horse.relationType === "dam" ? "borderbottom" : "borderleft"}`;
     return (
       <td key={key} rowSpan={rowspan} className={tdclass}>
-        <div className="font-bold" data-id={horse.id} data-d={horsedetails}>{horse.name || "Unknown"}</div>
+        <div className="font-bold" style={{ backgroundColor: bgClass }} data-id={horse.id} data-d={horsedetails}>
+          {horse.name || "Unknown"}
+        </div>
       </td>
     );
   };
@@ -74,9 +81,21 @@ const RealPedigreePage = () => {
           <div className="text-center mb-12">
             <h1 horseid={horseId} className="text-4xl font-bold text-center mb-8">
               {pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse"}
-              <br />
-              <span>(Generation: {gen})</span>
             </h1>
+
+            <div className="flex justify-center gap-2 mt-4">
+              {[3, 4, 5, 6].map((g) => (
+                <button
+                  key={g}
+                  onClick={() => handleGenChange(g)}
+                  className={`px-6 py-2 rounded-full font-bold text-xs transition-all ${
+                    gen === g ? "bg-red-600 text-white scale-110 shadow-lg shadow-red-900/20" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  }`}
+                >
+                  {g} GENERATIONS
+                </button>
+              ))}
+            </div>
           </div>
           {loading && <div className="text-center text-xl text-yellow-400">Loading data from API...</div>}
 
