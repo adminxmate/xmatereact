@@ -1,11 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { logout, verifyToken } from "../../services/authService.js";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const isActive = (path) => location.pathname === path;
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const result = await verifyToken();
+      setIsLoggedIn(result.valid);
+    };
+    checkAuth();
+
+    const handleAuthChange = async () => {
+      const result = await verifyToken();
+      setIsLoggedIn(result.valid);
+    };
+
+    window.addEventListener("auth-state-changed", handleAuthChange);
+    return () => window.removeEventListener("auth-state-changed", handleAuthChange);
+  }, []);
 
   return (
     <nav className="flex justify-between items-center px-10 py-5 bg-black/10">
@@ -44,19 +62,38 @@ const Header = () => {
         >
           Pricing
         </button>
-        
-        <button
-          onClick={() => {
-            window.dispatchEvent(
-              new CustomEvent("open-login-modal", { detail: { reason: "manual" } })
-            );
-          }}
-          className={`uppercase ${
-            isActive("/login") ? "text-[#e23e44]" : "hover:text-gray-400"
-          }`}
-        >
-          Login
-        </button>
+
+        {isLoggedIn ? (
+          <>
+            <button
+              onClick={() => navigate("/dashboard")}
+              className={`uppercase ${
+                isActive("/dashboard") ? "text-[#e23e44]" : "hover:text-gray-400"
+              }`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={logout}
+              className="uppercase hover:text-gray-400"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent("open-login-modal", { detail: { reason: "manual" } })
+              );
+            }}
+            className={`uppercase ${
+              isActive("/login") ? "text-[#e23e44]" : "hover:text-gray-400"
+            }`}
+          >
+            Login
+          </button>
+        )}
       </div>
     </nav>
   );

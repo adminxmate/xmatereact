@@ -28,7 +28,6 @@ const PlansPage = () => {
     fetchPlans();
   }, []);
 
-  // ✅ Since API returns single plan, just take first
   const displayedPlan = plans[0];
 
   return (
@@ -56,7 +55,6 @@ const PlansPage = () => {
                 ))}
               </div>
 
-              {/* Currency Toggle */}
               <div className="bg-gray-800 rounded-full p-1 flex">
                 {["INR", "USD", "EUR"].map((cur) => (
                   <button key={cur} onClick={() => setCurrency(cur)} className={`px-6 py-2 rounded-full transition ${currency === cur ? "bg-[#e23e44] text-white" : "text-gray-400 hover:text-white"}`}>
@@ -66,7 +64,6 @@ const PlansPage = () => {
               </div>
             </div>
 
-            {/* Single Plan Card */}
             <div className="bg-gray-800 rounded-xl shadow-lg hover:scale-105 transform transition duration-300 p-8 flex flex-col items-center">
               <h2 className="text-2xl font-bold mb-2">{displayedPlan.name}</h2>
               <p className="text-gray-400 mb-6">{displayedPlan.overview}</p>
@@ -85,7 +82,7 @@ const PlansPage = () => {
                   </li>
                 ))}
               </ul>
-              <button className="mt-auto bg-[#e23e44] hover:bg-red-600 text-white font-bold py-3 px-6 rounded transition">Get Started</button>
+              {/* <button className="mt-auto bg-[#e23e44] hover:bg-red-600 text-white font-bold py-3 px-6 rounded transition">Get Started</button> */}
             </div>
           </div>
         ) : (

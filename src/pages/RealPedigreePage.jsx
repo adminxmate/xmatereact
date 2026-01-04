@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
+import { useAuth } from "../hooks/useAuth"; // ✅ import auth hook
 
 const RealPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
+
+  const { isLoggedIn } = useAuth(); // ✅ check login state
 
   const horseId = searchParams.get("horseid");
   useEffect(() => {
@@ -13,6 +16,7 @@ const RealPedigreePage = () => {
       navigate("/", { replace: true });
     }
   }, [horseId, navigate]);
+
   const gen = parseInt(searchParams.get("gen")) || 3;
 
   const [pedigree, setPedigree] = useState(null);
@@ -34,10 +38,22 @@ const RealPedigreePage = () => {
       }
     };
 
-    fetchPedigree();
+    if (horseId) {
+      fetchPedigree();
+    }
   }, [horseId, gen]);
 
   const handleGenChange = (newGen) => {
+    if (!isLoggedIn) {
+      // 🚨 Not logged in → trigger login modal with reason "manual"
+      const event = new CustomEvent("open-login-modal", {
+        detail: { reason: "manual" }, // ✅ ensures close button shows
+      });
+      window.dispatchEvent(event);
+      return;
+    }
+
+    // ✅ Logged in → update generation
     setSearchParams({ horseid: horseId, gen: newGen });
   };
 
@@ -97,6 +113,7 @@ const RealPedigreePage = () => {
               ))}
             </div>
           </div>
+
           {loading && <div className="text-center text-xl text-yellow-400">Loading data from API...</div>}
 
           {error && (

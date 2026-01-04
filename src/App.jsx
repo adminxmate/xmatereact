@@ -1,14 +1,16 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LandingPage from './pages/LandingPage';
-import HorseDataTable from './pages/HorseDataTable';
-import PlansPage from './pages/PlansPage';
-import ContactPage from './pages/ContactPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import CustomerAgreementPage from './pages/CustomerAgreementPage';
-import RealPedigreePage from './pages/RealPedigreePage';
-import HypotheticalPedigreePage from './pages/HypotheticalPedigreePage';
-import LoginModal from './components/LoginModal'; 
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./components/Layout/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
+import HorseDataTable from "./pages/HorseDataTable";
+import PlansPage from "./pages/PlansPage";
+import ContactPage from "./pages/ContactPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import CustomerAgreementPage from "./pages/CustomerAgreementPage";
+import RealPedigreePage from "./pages/RealPedigreePage";
+import HypotheticalPedigreePage from "./pages/HypotheticalPedigreePage";
+import Dashboard from "./pages/DashboardPage";
+import LoginModal from "./components/LoginModal";
 
 const App = () => {
   return (
@@ -23,6 +25,14 @@ const App = () => {
         <Route path="/customeragreement" element={<CustomerAgreementPage />} />
         <Route path="/realpedigree" element={<RealPedigreePage />} />
         <Route path="/hypotheticalpedigree" element={<HypotheticalPedigreePage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

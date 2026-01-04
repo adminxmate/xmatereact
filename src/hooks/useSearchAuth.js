@@ -3,11 +3,12 @@ import { Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import HorseDropdown from "../components/Search/HorseDropdown";
-import { validateEmail } from "../utils/validation";
+import { useSearchAuth } from "../hooks/useSearchAuth"; // <-- use your new hook
 
-const LandingPage = () => {
+const DashboardPage = () => {
   const navigate = useNavigate();
 
+  // Local horse/email state
   const [realHorse, setRealHorse] = useState(null);
   const [sire, setSire] = useState(null);
   const [dam, setDam] = useState(null);
@@ -15,52 +16,76 @@ const LandingPage = () => {
   const [realEmail, setRealEmail] = useState("");
   const [hypoEmail, setHypoEmail] = useState("");
 
-  const [realError, setRealError] = useState("");
-  const [hypoError, setHypoError] = useState("");
+  const [generation, setGeneration] = useState(3);
+
+  /**
+   * Hook usage:
+   * - Pass isLoggedIn (true since dashboard is protected)
+   * - Provide callback for search execution
+   */
+  const {
+    error: realError,
+    activeModal: realModal,
+    setActiveModal: setRealModal,
+    handleSearchAttempt: handleRealSearchAttempt,
+  } = useSearchAuth(true, (sanitizedEmail) => {
+    navigate(
+      `/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(
+        sanitizedEmail
+      )}&gen=${generation}`
+    );
+  });
+
+  const {
+    error: hypoError,
+    activeModal: hypoModal,
+    setActiveModal: setHypoModal,
+    handleSearchAttempt: handleHypoSearchAttempt,
+  } = useSearchAuth(true, (sanitizedEmail) => {
+    navigate(
+      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(
+        sanitizedEmail
+      )}&gen=${generation}`
+    );
+  });
 
   const handleRealPedigree = () => {
     if (!realHorse?.value) {
-      setRealError("Please select a horse.");
+      setRealModal(null);
       return;
     }
-
-    const { valid, message, sanitized } = validateEmail(realEmail);
-    if (!valid) {
-      setRealError(message);
-      return;
-    }
-
-    setRealError("");
-    navigate(
-      `/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(
-        sanitized
-      )}&gen=3`
-    );
+    handleRealSearchAttempt(realEmail);
   };
 
   const handleHypotheticalPedigree = () => {
     if (!sire?.value || !dam?.value) {
-      setHypoError("Please select both sire and dam.");
+      setHypoModal(null);
       return;
     }
-
-    const { valid, message, sanitized } = validateEmail(hypoEmail);
-    if (!valid) {
-      setHypoError(message);
-      return;
-    }
-
-    setHypoError("");
-    navigate(
-      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(
-        sanitized
-      )}&gen=3`
-    );
+    handleHypoSearchAttempt(hypoEmail);
   };
 
   return (
     <MainLayout>
       <section className="w-full flex-grow flex flex-col items-center justify-center p-6 space-y-8">
+        
+        {/* Generation Selector */}
+        <div className="flex gap-4 mb-6">
+          {[3, 4, 5, 6].map((gen) => (
+            <button
+              key={gen}
+              onClick={() => setGeneration(gen)}
+              className={`px-4 py-2 rounded font-bold border transition ${
+                generation === gen
+                  ? "bg-[#e23e44] text-white"
+                  : "bg-[#111111] text-gray-300 hover:bg-[#222]"
+              }`}
+            >
+              Generation {gen}
+            </button>
+          ))}
+        </div>
+
         {/* Real Pedigree Block */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
@@ -77,7 +102,6 @@ const LandingPage = () => {
               value={realEmail}
               onChange={(e) => {
                 setRealEmail(e.target.value);
-                setRealError("");
               }}
               className="flex-[1.5] p-3 bg-white text-black rounded outline-none"
             />
@@ -116,7 +140,6 @@ const LandingPage = () => {
               value={hypoEmail}
               onChange={(e) => {
                 setHypoEmail(e.target.value);
-                setHypoError("");
               }}
               className="flex-1 p-3 bg-white text-black rounded outline-none"
             />
@@ -131,16 +154,9 @@ const LandingPage = () => {
             <p className="text-red-500 text-sm mt-2 ml-1">{hypoError}</p>
           )}
         </div>
-
-        <button
-          onClick={() => navigate("/horses")}
-          className="text-gray-400 border border-gray-600 px-8 py-2 rounded-sm hover:bg-white/5 transition text-sm"
-        >
-          Report missing horse test
-        </button>
       </section>
     </MainLayout>
   );
 };
 
-export default LandingPage;
+export default DashboardPage;

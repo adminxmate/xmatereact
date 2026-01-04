@@ -1,33 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { verifyLogin } from '../services/authService';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { verifyLogin } from "../services/authService.js";
+import { validateEmail } from "../utils/validation";
 
 const LoginModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [openReason, setOpenReason] = useState(null);
-  const [loading, setLoading] = useState(false);  
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleOpen = (e) => {
       setIsOpen(true);
       setOpenReason(e.detail?.reason || "auto");
+      if (e.detail?.email) {
+        setForm((prev) => ({ ...prev, email: e.detail.email }));
+      }
     };
-    window.addEventListener('open-login-modal', handleOpen);
-    return () => window.removeEventListener('open-login-modal', handleOpen);
+    window.addEventListener("open-login-modal", handleOpen);
+    return () => window.removeEventListener("open-login-modal", handleOpen);
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
-    const result = await verifyLogin(form.username, form.password);
+    const { valid, message, sanitized } = validateEmail(form.email);
+    if (!valid) {
+      setError(message);
+      setLoading(false);
+      return;
+    }
+
+    const result = await verifyLogin(sanitized, form.password);
 
     if (result.success) {
       setIsOpen(false);
-      setForm({ username: '', password: '' });
+      setForm({ email: "", password: "" });
       setOpenReason(null);
+
+      window.dispatchEvent(
+        new CustomEvent("auth-state-changed", {
+          detail: { loggedIn: true },
+        })
+      );
+
+      // ✅ Redirect to dashboard instead of reload
+      navigate("/dashboard", { replace: true });
     } else {
       setError(result.message);
     }
@@ -38,18 +61,13 @@ const LoginModal = () => {
     setIsOpen(false);
     setOpenReason(null);
   };
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden relative">
-        
         {openReason === "manual" && (
-          <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 text-slate-400 hover:text-slate-600"
-          >
+          <button onClick={handleClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
             ✕
           </button>
         )}
@@ -60,13 +78,13 @@ const LoginModal = () => {
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Username</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Email</label>
               <input
-                type="text"
+                type="email"
                 required
                 className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
             <div>
@@ -92,7 +110,9 @@ const LoginModal = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-              ) : "Log In"}
+              ) : (
+                "Log In"
+              )}
             </button>
           </form>
         </div>

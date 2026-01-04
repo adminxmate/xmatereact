@@ -4,9 +4,11 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import HorseDropdown from "../components/Search/HorseDropdown";
 import { validateEmail } from "../utils/validation";
+import { useAuth } from "../hooks/useAuth"; // ✅ updated reference
 
-const LandingPage = () => {
+const DashboardPage = () => {
   const navigate = useNavigate();
+  const { isLoggedIn, user, logout } = useAuth();
 
   const [realHorse, setRealHorse] = useState(null);
   const [sire, setSire] = useState(null);
@@ -18,23 +20,41 @@ const LandingPage = () => {
   const [realError, setRealError] = useState("");
   const [hypoError, setHypoError] = useState("");
 
+  const [generation, setGeneration] = useState(3);
+
+  const executeSearchFlow = (email, onSuccess, setError) => {
+    const { valid, message, sanitized } = validateEmail(email);
+
+    if (!valid) {
+      setError(message);
+      return;
+    }
+
+    if (!isLoggedIn) {
+      setError("You must be logged in to search.");
+      return;
+    }
+
+    setError("");
+    onSuccess(sanitized);
+  };
+
   const handleRealPedigree = () => {
     if (!realHorse?.value) {
       setRealError("Please select a horse.");
       return;
     }
 
-    const { valid, message, sanitized } = validateEmail(realEmail);
-    if (!valid) {
-      setRealError(message);
-      return;
-    }
-
-    setRealError("");
-    navigate(
-      `/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(
-        sanitized
-      )}&gen=3`
+    executeSearchFlow(
+      realEmail,
+      (sanitizedEmail) => {
+        navigate(
+          `/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(
+            sanitizedEmail
+          )}&gen=${generation}`
+        );
+      },
+      setRealError
     );
   };
 
@@ -44,23 +64,40 @@ const LandingPage = () => {
       return;
     }
 
-    const { valid, message, sanitized } = validateEmail(hypoEmail);
-    if (!valid) {
-      setHypoError(message);
-      return;
-    }
-
-    setHypoError("");
-    navigate(
-      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(
-        sanitized
-      )}&gen=3`
+    executeSearchFlow(
+      hypoEmail,
+      (sanitizedEmail) => {
+        navigate(
+          `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(
+            sanitizedEmail
+          )}&gen=${generation}`
+        );
+      },
+      setHypoError
     );
   };
 
   return (
     <MainLayout>
       <section className="w-full flex-grow flex flex-col items-center justify-center p-6 space-y-8">
+        
+        {/* Generation Selector */}
+        <div className="flex gap-4 mb-6">
+          {[3, 4, 5, 6].map((gen) => (
+            <button
+              key={gen}
+              onClick={() => setGeneration(gen)}
+              className={`px-4 py-2 rounded font-bold border transition ${
+                generation === gen
+                  ? "bg-[#e23e44] text-white"
+                  : "bg-[#111111] text-gray-300 hover:bg-[#222]"
+              }`}
+            >
+              Generation {gen}
+            </button>
+          ))}
+        </div>
+
         {/* Real Pedigree Block */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
@@ -132,15 +169,18 @@ const LandingPage = () => {
           )}
         </div>
 
-        <button
-          onClick={() => navigate("/horses")}
-          className="text-gray-400 border border-gray-600 px-8 py-2 rounded-sm hover:bg-white/5 transition text-sm"
-        >
-          Report missing horse test
-        </button>
+        {/* Optional logout button */}
+        {isLoggedIn && (
+          <button
+            onClick={logout}
+            className="mt-6 text-gray-400 border border-gray-600 px-8 py-2 rounded-sm hover:bg-white/5 transition text-sm"
+          >
+            Logout
+          </button>
+        )}
       </section>
     </MainLayout>
   );
 };
 
-export default LandingPage;
+export default DashboardPage;
