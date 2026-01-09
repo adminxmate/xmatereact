@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
-import { useAuth } from "../hooks/useAuth"; // ✅ import auth hook
+import { useAuth } from "../hooks/useAuth";
 
 const HypotheticalPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { isLoggedIn } = useAuth(); // ✅ check login state
+  const { isLoggedIn } = useAuth();
 
   const sireId = searchParams.get("sireid");
   const damId = searchParams.get("damid");
@@ -24,14 +24,23 @@ const HypotheticalPedigreePage = () => {
   const [pedigree, setPedigree] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [comingSoon, setComingSoon] = useState(false);
 
   useEffect(() => {
     const fetchPedigree = async () => {
       setLoading(true);
       setError(null);
+      setComingSoon(false);
+
+      if (gen === 6) {
+        setLoading(false);
+        setComingSoon(true);
+        return;
+      }
+
       try {
         const response = await axios.get(
-          `https://haves.co.in/api/v1/horses/hypo?sireid=${sireId}&damid=${damId}&gen=${gen - 1}`
+          `${import.meta.env.VITE_API_URL}api/v1/horses/hypo?sireid=${sireId}&damid=${damId}&gen=${gen - 1}`
         );
         setPedigree(response.data);
       } catch (err) {
@@ -53,7 +62,6 @@ const HypotheticalPedigreePage = () => {
 
   const handleGenChange = (newGen) => {
     if (!isLoggedIn) {
-      // 🚨 Not logged in → trigger login modal with reason "manual"
       const event = new CustomEvent("open-login-modal", {
         detail: { reason: "manual" },
       });
@@ -61,7 +69,6 @@ const HypotheticalPedigreePage = () => {
       return;
     }
 
-    // ✅ Logged in → update generation
     setSearchParams({ sireid: sireId, damid: damId, gen: newGen });
   };
 
@@ -74,7 +81,7 @@ const HypotheticalPedigreePage = () => {
     const horsedetails = `${horse?.sex || ""}-${
       horse?.dob ? new Date(horse.dob).getFullYear() : ""
     }`;
-    const tdclass = `p-1 text-left align-middle ${
+    const tdclass = `p-1 text-left align-middle max-w-[150px] ${
       horse?.generation === 0
         ? ""
         : horse?.relationType === "dam"
@@ -95,7 +102,7 @@ const HypotheticalPedigreePage = () => {
     return (
       <td key={key} rowSpan={rowspan} className={tdclass}>
         <div
-          className="font-bold"
+          className="text-gray-800 break-all"
           style={{ backgroundColor: bgClass }}
           data-id={horse.id}
           data-d={horsedetails}
@@ -133,6 +140,7 @@ const HypotheticalPedigreePage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold mb-4">
+              Hypothetical -  
               <span className="text-white">
                 {pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse"}
               </span>{" "}
@@ -165,6 +173,12 @@ const HypotheticalPedigreePage = () => {
             </div>
           )}
 
+          {comingSoon && (
+            <div className="bg-gray-100 rounded-xl shadow-lg p-8 flex flex-col items-center max-w-md mx-auto">
+              <h2 className="text-black text-2xl font-bold mb-2">COMING SOON</h2>
+            </div>
+          )}
+
           {error && (
             <div className="text-center bg-red-900/50 border-2 border-red-600 rounded-xl p-8 max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold text-red-400 mb-4">Error</h2>
@@ -172,15 +186,15 @@ const HypotheticalPedigreePage = () => {
             </div>
           )}
 
-          {!loading && !error && pedigree?.pedigree && (
+          {!loading && !error && !comingSoon && pedigree?.pedigree && (
             <div className="overflow-x-auto">
-              <table className="pedigree-table table-auto border-collapse bg-white text-black border border-gray-700 w-full">
+              <table className="pedigree-table table-auto border-collapse  rounded-xl bg-white text-black border border-gray-700 w-full">
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
             </div>
           )}
 
-          {!loading && !error && pedigree && !pedigree.pedigree && (
+          {!loading && !error && !comingSoon && pedigree && !pedigree.pedigree && (
             <div className="text-center text-gray-400 text-xl">
               No pedigree data available for the selected generation.
             </div>

@@ -32,7 +32,7 @@ const PlansPage = () => {
 
   return (
     <MainLayout>
-      <div className="  text-white p-6 md:p-12 font-sans flex items-center justify-center">
+      <div className="text-white p-6 md:p-12 font-sans flex items-center justify-center">
         {loading ? (
           <Loader2 className="animate-spin mx-auto text-[#e23e44]" size={40} />
         ) : displayedPlan ? (

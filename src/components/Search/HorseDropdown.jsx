@@ -3,7 +3,7 @@ import { searchHorses } from "../../api/horseApi";
 
 const HorseDropdown = ({ value, onChange, placeholder }) => {
   const loadOptions = async (inputValue, loadedOptions, { page }) => {
-    const { data, hasMore } = await searchHorses({
+    const { data } = await searchHorses({
       query: inputValue,
       page,
       limit: 20,
@@ -11,13 +11,15 @@ const HorseDropdown = ({ value, onChange, placeholder }) => {
 
     const options = data.map((horse) => ({
       value: horse.id,
-      label: horse.foalingYear ? `${horse.name} (${horse.foalingYear})` : horse.name,
+      label: horse.foalingYear
+        ? `${horse.name} (${horse.foalingYear})`
+        : horse.name,
       horse,
     }));
 
     return {
       options,
-      hasMore,
+      hasMore: inputValue ? false : true,
       additional: {
         page: page + 1,
       },

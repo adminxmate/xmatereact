@@ -3,41 +3,21 @@ import { Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import HorseDropdown from "../components/Search/HorseDropdown";
-import { validateEmail } from "../utils/validation";
 import { useAuth } from "../hooks/useAuth"; // ✅ updated reference
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, user, logout } = useAuth();
+  const { isLoggedIn, logout } = useAuth();
 
   const [realHorse, setRealHorse] = useState(null);
   const [sire, setSire] = useState(null);
   const [dam, setDam] = useState(null);
 
-  const [realEmail, setRealEmail] = useState("");
-  const [hypoEmail, setHypoEmail] = useState("");
-
   const [realError, setRealError] = useState("");
   const [hypoError, setHypoError] = useState("");
 
   const [generation, setGeneration] = useState(3);
-
-  const executeSearchFlow = (email, onSuccess, setError) => {
-    const { valid, message, sanitized } = validateEmail(email);
-
-    if (!valid) {
-      setError(message);
-      return;
-    }
-
-    if (!isLoggedIn) {
-      setError("You must be logged in to search.");
-      return;
-    }
-
-    setError("");
-    onSuccess(sanitized);
-  };
+  const [comingSoon, setComingSoon] = useState("");
 
   const handleRealPedigree = () => {
     if (!realHorse?.value) {
@@ -45,17 +25,13 @@ const DashboardPage = () => {
       return;
     }
 
-    executeSearchFlow(
-      realEmail,
-      (sanitizedEmail) => {
-        navigate(
-          `/realpedigree?horseid=${realHorse.value}&email=${encodeURIComponent(
-            sanitizedEmail
-          )}&gen=${generation}`
-        );
-      },
-      setRealError
-    );
+    if (generation === 6) {
+      setComingSoon("6 Generation pedigree is COMING SOON");
+      return;
+    }
+
+    setRealError("");
+    navigate(`/realpedigree?horseid=${realHorse.value}&gen=${generation}`);
   };
 
   const handleHypotheticalPedigree = () => {
@@ -64,16 +40,14 @@ const DashboardPage = () => {
       return;
     }
 
-    executeSearchFlow(
-      hypoEmail,
-      (sanitizedEmail) => {
-        navigate(
-          `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&email=${encodeURIComponent(
-            sanitizedEmail
-          )}&gen=${generation}`
-        );
-      },
-      setHypoError
+    if (generation === 6) {
+      setComingSoon("6 Generation pedigree is COMING SOON");
+      return;
+    }
+
+    setHypoError("");
+    navigate(
+      `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&gen=${generation}`
     );
   };
 
@@ -86,7 +60,10 @@ const DashboardPage = () => {
           {[3, 4, 5, 6].map((gen) => (
             <button
               key={gen}
-              onClick={() => setGeneration(gen)}
+              onClick={() => {
+                setGeneration(gen);
+                setComingSoon("");
+              }}
               className={`px-4 py-2 rounded font-bold border transition ${
                 generation === gen
                   ? "bg-[#e23e44] text-white"
@@ -98,6 +75,11 @@ const DashboardPage = () => {
           ))}
         </div>
 
+        {/* Show COMING SOON message */}
+        {comingSoon && (
+          <p className="text-blue-400 font-bold text-lg">{comingSoon}</p>
+        )}
+
         {/* Real Pedigree Block */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">
@@ -108,16 +90,6 @@ const DashboardPage = () => {
                 placeholder="Horse Name"
               />
             </div>
-            <input
-              type="email"
-              placeholder="Email Address"
-              value={realEmail}
-              onChange={(e) => {
-                setRealEmail(e.target.value);
-                setRealError("");
-              }}
-              className="flex-[1.5] p-3 bg-white text-black rounded outline-none"
-            />
             <button
               onClick={handleRealPedigree}
               className="flex-1 bg-[#e23e44] hover:bg-[#c13238] py-3 rounded font-bold flex items-center justify-center gap-2 transition"
@@ -147,16 +119,6 @@ const DashboardPage = () => {
                 placeholder="Dam Name"
               />
             </div>
-            <input
-              type="email"
-              placeholder="Email Address"
-              value={hypoEmail}
-              onChange={(e) => {
-                setHypoEmail(e.target.value);
-                setHypoError("");
-              }}
-              className="flex-1 p-3 bg-white text-black rounded outline-none"
-            />
             <button
               onClick={handleHypotheticalPedigree}
               className="flex-1 bg-[#e23e44] italic hover:bg-[#c13238] py-3 rounded font-bold flex items-center justify-center gap-2 transition"
