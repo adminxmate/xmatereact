@@ -121,14 +121,14 @@ const RealPedigreePage = () => {
 
   return (
     <MainLayout>
-      <section className="min-h-screen text-white py-12 px-4">
+      <section className="min-h-screen text-white py-12 px-4 w-[95%] md:w-[80%] mx-auto">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 horseid={horseId} className="text-4xl font-bold text-center mb-8">
+          <div className="text-center mb-6">
+            <h1 horseid={horseId} className="text-2xl lg:text-4xl font-bold mt-4">
               Real - {pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse"}
             </h1>
 
-            <div className="flex justify-center gap-2 mt-4">
+            <div className="flex flex-wrap justify-center gap-4 mt-4">
               {[3, 4, 5, 6].map((g) => (
                 <button
                   key={g}
@@ -166,7 +166,7 @@ const RealPedigreePage = () => {
 
           {!loading && !error && !comingSoon && pedigree?.pedigree && (
             <div className="overflow-x-auto">
-              <table className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full">
+              <table className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full min-w-[768px] break-words">
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
             </div>

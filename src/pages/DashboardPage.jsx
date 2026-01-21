@@ -3,7 +3,7 @@ import { Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import HorseDropdown from "../components/Search/HorseDropdown";
-import { useAuth } from "../hooks/useAuth"; // ✅ updated reference
+import { useAuth } from "../hooks/useAuth";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -16,17 +16,11 @@ const DashboardPage = () => {
   const [realError, setRealError] = useState("");
   const [hypoError, setHypoError] = useState("");
 
-  const [generation, setGeneration] = useState(3);
-  const [comingSoon, setComingSoon] = useState("");
+  const generation = 3;
 
   const handleRealPedigree = () => {
     if (!realHorse?.value) {
       setRealError("Please select a horse.");
-      return;
-    }
-
-    if (generation === 6) {
-      setComingSoon("6 Generation pedigree is COMING SOON");
       return;
     }
 
@@ -40,11 +34,6 @@ const DashboardPage = () => {
       return;
     }
 
-    if (generation === 6) {
-      setComingSoon("6 Generation pedigree is COMING SOON");
-      return;
-    }
-
     setHypoError("");
     navigate(
       `/hypotheticalpedigree?sireid=${sire.value}&damid=${dam.value}&gen=${generation}`
@@ -54,32 +43,6 @@ const DashboardPage = () => {
   return (
     <MainLayout>
       <section className="w-full flex-grow flex flex-col items-center justify-center p-6 space-y-8">
-        
-        {/* Generation Selector */}
-        <div className="flex gap-4 mb-6">
-          {[3, 4, 5, 6].map((gen) => (
-            <button
-              key={gen}
-              onClick={() => {
-                setGeneration(gen);
-                setComingSoon("");
-              }}
-              className={`px-4 py-2 rounded font-bold border transition ${
-                generation === gen
-                  ? "bg-[#e23e44] text-white"
-                  : "bg-[#111111] text-gray-300 hover:bg-[#222]"
-              }`}
-            >
-              Generation {gen}
-            </button>
-          ))}
-        </div>
-
-        {/* Show COMING SOON message */}
-        {comingSoon && (
-          <p className="text-blue-400 font-bold text-lg">{comingSoon}</p>
-        )}
-
         {/* Real Pedigree Block */}
         <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black">
           <div className="flex flex-col md:flex-row gap-3">

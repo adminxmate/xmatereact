@@ -136,10 +136,10 @@ const HypotheticalPedigreePage = () => {
 
   return (
     <MainLayout>
-      <main className="min-h-screen text-white py-12 px-4">
+      <main className="min-h-screen text-white py-12 px-4 w-[95%] md:w-[80%] mx-auto">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl lg:text-4xl font-bold">
               Hypothetical -  
               <span className="text-white">
                 {pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse"}
@@ -150,7 +150,7 @@ const HypotheticalPedigreePage = () => {
               </span>
             </h1>
 
-            <div className="flex justify-center gap-2 mt-4">
+            <div className="flex flex-wrap justify-center gap-4 mt-6">
               {[3, 4, 5, 6].map((g) => (
                 <button
                   key={g}
@@ -188,7 +188,7 @@ const HypotheticalPedigreePage = () => {
 
           {!loading && !error && !comingSoon && pedigree?.pedigree && (
             <div className="overflow-x-auto">
-              <table className="pedigree-table table-auto border-collapse  rounded-xl bg-white text-black border border-gray-700 w-full">
+              <table className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full min-w-[768px] break-words">
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
             </div>
