@@ -39,6 +39,76 @@ export const verifyLogin = async (email, password) => {
   }
 };
 
+export const registerUser = async (username, email, password) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}api/v1/auth/signup`,
+      {
+        username,
+        email,
+        password,
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const data = response.data;
+
+    if (response.status === 201 || response.status === 200) {
+      return { success: true, data };
+    } else {
+      return { success: false, message: data.message || "Registration failed" };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Registration failed",
+    };
+  }
+};
+
+
+export const requestPasswordReset = async (email) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}api/v1/auth/forgot-password`,
+      { email },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    return {
+      success: response.status === 200,
+      message: response.data.message || "Check your email for reset link",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to send reset link",
+    };
+  }
+};
+
+export const resetPassword = async (token, newPassword) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}api/v1/auth/reset-password`,
+      { token, newPassword },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    return {
+      success: response.status === 200,
+      message: response.data.message || "Password reset successful",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to reset password",
+    };
+  }
+};
+
 export const verifyToken = async () => {
   const token = localStorage.getItem("token");
   if (!token) return { valid: false };
@@ -58,11 +128,12 @@ export const verifyToken = async () => {
   }
 };
 
-// Logout
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   console.log("User after removal:", localStorage.getItem("user"));
-  window.dispatchEvent(new CustomEvent("auth-state-changed", { detail: { loggedIn: false } }));
+  window.dispatchEvent(
+    new CustomEvent("auth-state-changed", { detail: { loggedIn: false } })
+  );
   window.location.href = "/";
 };

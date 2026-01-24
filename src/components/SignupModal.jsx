@@ -1,39 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { registerUser } from '../services/authService'; // Assuming this exists
-import { validateEmail } from '../utils/validation';
+import React, { useState, useEffect } from "react";
+import { registerUser } from "../services/authService";
+import { validateEmail } from "../utils/validation";
+import { Eye, EyeOff } from "lucide-react";
+
 
 const SignupModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
-    email: '',
-    password: '',
-    confirmPassword: ''
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
+
+  // NEW: state for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const handleOpen = (e) => {
       setIsOpen(true);
-      // Pre-fill email if passed from Landing Page or Login Modal
       if (e.detail?.email) {
-        setForm(prev => ({ ...prev, email: e.detail.email }));
+        setForm((prev) => ({ ...prev, email: e.detail.email }));
       }
     };
-
-    window.addEventListener('open-signup-modal', handleOpen);
-    return () => window.removeEventListener('open-signup-modal', handleOpen);
+    window.addEventListener("open-signup-modal", handleOpen);
+    return () => window.removeEventListener("open-signup-modal", handleOpen);
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
-    // 1. Logic Validation
     const { valid, message, sanitized } = validateEmail(form.email);
     if (!valid) {
       setError(message);
+      setLoading(false);
+      return;
+    }
+
+    if (!form.username.trim()) {
+      setError("Username is required.");
       setLoading(false);
       return;
     }
@@ -50,13 +60,15 @@ const SignupModal = () => {
       return;
     }
 
-    // 2. Service Call
-    const result = await registerUser(sanitized, form.password);
+    const result = await registerUser(
+      form.username.trim(),
+      sanitized,
+      form.password,
+    );
 
     if (result.success) {
       setIsOpen(false);
-      setForm({ email: '', password: '', confirmPassword: '' });
-      // Usually, you'd auto-login the user or show a success message here
+      setForm({ username: "", email: "", password: "", confirmPassword: "" });
     } else {
       setError(result.message || "Registration failed. Try again.");
     }
@@ -65,14 +77,16 @@ const SignupModal = () => {
 
   const handleSwitchToLogin = () => {
     setIsOpen(false);
-    window.dispatchEvent(new CustomEvent('open-login-modal', { 
-      detail: { email: form.email, reason: "manual" } 
-    }));
+    window.dispatchEvent(
+      new CustomEvent("open-login-modal", {
+        detail: { email: form.email, reason: "manual" },
+      }),
+    );
   };
 
   const handleClose = () => {
     setIsOpen(false);
-    setError('');
+    setError("");
   };
 
   if (!isOpen) return null;
@@ -80,7 +94,6 @@ const SignupModal = () => {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden relative">
-        
         <button
           onClick={handleClose}
           className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 p-2"
@@ -90,11 +103,28 @@ const SignupModal = () => {
 
         <div className="p-8">
           <h2 className="text-2xl font-bold text-slate-800">Create Account</h2>
-          <p className="mt-2 text-sm text-slate-500">Join us to start searching our database.</p>
+          <p className="mt-2 text-sm text-slate-500">
+            Join us to start searching our database.
+          </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Email Address</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Username
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Email Address
+              </label>
               <input
                 type="email"
                 required
@@ -104,47 +134,73 @@ const SignupModal = () => {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Password</label>
+            <div className="relative">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Password
+              </label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
-                className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="relative w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg 
+               focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Confirm Password</label>
+            <div className="relative">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Confirm Password
+              </label>
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 required
-                className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="relative w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg 
+               focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10"
                 value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, confirmPassword: e.target.value })
+                }
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
-            {error && <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>}
+            {error && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center disabled:opacity-50"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center disabled:opacity-50"
             >
               {loading ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-slate-600">
-              Already have an account?{' '}
-              <button 
+              Already have an account?{" "}
+              <button
                 onClick={handleSwitchToLogin}
                 className="text-blue-600 font-semibold hover:underline"
               >
-                Log In
+                Login
               </button>
             </p>
           </div>

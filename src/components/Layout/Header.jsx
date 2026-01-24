@@ -62,6 +62,7 @@ const Header = () => {
           </button>
         </>
       ) : (
+        <>
         <button
           onClick={() => {
             window.dispatchEvent(
@@ -74,6 +75,19 @@ const Header = () => {
         >
           Login
         </button>
+        <button
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent("open-signup-modal", { detail: { reason: "manual" } })
+            );
+          }}
+          className={`uppercase ${
+            isActive("/register") ? "text-[#e23e44]" : "hover:text-gray-400"
+          }`}
+        >
+          Signup
+        </button>
+        </>
       )}
     </>
   );
