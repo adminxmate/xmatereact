@@ -11,11 +11,17 @@ import RealPedigreePage from "./pages/RealPedigreePage";
 import HypotheticalPedigreePage from "./pages/HypotheticalPedigreePage";
 import Dashboard from "./pages/DashboardPage";
 import LoginModal from "./components/LoginModal";
+import SignupModal from "./components/SignupModal";
+import ForgotPasswordModal from "./components/ForgotPasswordModal";
+import ResetPasswordModal from "./components/ResetPasswordModal";
 
 const App = () => {
   return (
     <Router>
       <LoginModal />
+      <SignupModal />      
+      <ForgotPasswordModal />       
+      <ResetPasswordModal /> 
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/horses" element={<HorseDataTable />} />
