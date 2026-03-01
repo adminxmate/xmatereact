@@ -27,4 +27,8 @@ export default {
     },
   },
   plugins: [],
+  experimental: {
+    // Force Tailwind to output rgb() instead of oklch()
+    colorFormat: 'rgb',
+  },
 }

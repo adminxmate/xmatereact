@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import { useAuth } from "../hooks/useAuth";
+import { downloadImage, downloadPDF } from "../utils/exportUtils";
 
 const RealPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-
   const { isLoggedIn } = useAuth();
 
   const horseId = searchParams.get("horseid");
@@ -23,6 +23,8 @@ const RealPedigreePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [comingSoon, setComingSoon] = useState(false);
+
+  const tableRef = useRef();
 
   useEffect(() => {
     const fetchPedigree = async () => {
@@ -65,7 +67,6 @@ const RealPedigreePage = () => {
       window.dispatchEvent(event);
       return;
     }
-
     setSearchParams({ horseid: horseId, gen: newGen });
   };
 
@@ -119,6 +120,9 @@ const RealPedigreePage = () => {
     return rows.map((cells, i) => <tr key={i}>{cells}</tr>);
   };
 
+  const downloadFileName = pedigree?.pedigree?.[0]?.[0]?.name || "Unknown Horse";
+  const safeFileName = downloadFileName.replace(/[^a-z0-9]/gi, '_');
+
   return (
     <MainLayout>
       <section className="min-h-screen text-white py-12 px-4 w-[95%] md:w-[80%] mx-auto">
@@ -166,9 +170,27 @@ const RealPedigreePage = () => {
 
           {!loading && !error && !comingSoon && pedigree?.pedigree && (
             <div className="overflow-x-auto">
-              <table className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full min-w-[768px] break-words">
+              <table
+                ref={tableRef}
+                className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full min-w-[768px] break-words"
+              >
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
+
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => downloadImage(tableRef.current, `${safeFileName}_real_pedigree.png`)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Download as Image
+                </button>
+                <button
+                  onClick={() => downloadPDF(tableRef.current, `${safeFileName}_real_pedigree.pdf`)}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Download as PDF
+                </button>
+              </div>
             </div>
           )}
         </div>

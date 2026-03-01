@@ -2,72 +2,68 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// --- PRIVATE HELPERS ---
+const saveAuthData = (data) => {
+  if (data.token) {
+    localStorage.setItem("token", data.token);
+  }
+  if (data.user) {
+    localStorage.setItem("user", JSON.stringify(data.user));
+  }
+  window.dispatchEvent(
+    new CustomEvent("auth-state-changed", { detail: { loggedIn: true } })
+  );
+};
+
+// --- EXPORTED FUNCTIONS ---
+
 export const verifyLogin = async (email, password) => {
   try {
-    const response = await axios.post(
-      `${API_URL}api/v1/auth/login`,
-      {
-        loginKey: email,
-        password,
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    const response = await axios.post(`${API_URL}api/v1/auth/login`, {
+      loginKey: email,
+      password,
+    });
 
-    const data = response.data;
-
-    if (response.status === 200 && data.token) {
-      localStorage.setItem("token", data.token);
-
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-
-      return { success: true, data };
-    } else {
-      return {
-        success: false,
-        message: data.message || "Invalid credentials. Please try again.",
-      };
+    if (response.status === 200 && response.data.token) {
+      saveAuthData(response.data);
+      return { success: true, data: response.data };
     }
+    return { success: false, message: response.data.message || "Invalid credentials" };
   } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || "Invalid credentials",
-    };
+    return { success: false, message: error.response?.data?.message || "Login failed" };
   }
+};
+
+export const handleSSOCallback = async (code, provider = "google") => {
+  try {
+    const response = await axios.post(`${API_URL}api/v1/auth/${provider}/callback`, { code });
+
+    if (response.status === 200 && response.data.token) {
+      saveAuthData(response.data);
+      return { success: true, data: response.data };
+    }
+    return { success: false, message: "SSO verification failed" };
+  } catch (error) {
+    return { success: false, message: error.response?.data?.message || "SSO Error" };
+  }
+};
+
+export const loginWithSSO = (provider) => {
+  window.location.href = `${API_URL}api/v1/auth/${provider}`;
 };
 
 export const registerUser = async (username, email, password) => {
   try {
-    const response = await axios.post(
-      `${API_URL}api/v1/auth/signup`,
-      {
-        username,
-        email,
-        password,
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    const data = response.data;
-
-    if (response.status === 201 || response.status === 200) {
-      return { success: true, data };
-    } else {
-      return { success: false, message: data.message || "Registration failed" };
-    }
+    const response = await axios.post(`${API_URL}api/v1/auth/signup`, {
+      username,
+      email,
+      password,
+    });
+    return { success: response.status === 201 || response.status === 200, data: response.data };
   } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || "Registration failed",
-    };
+    return { success: false, message: error.response?.data?.message || "Registration failed" };
   }
 };
-
 
 export const requestPasswordReset = async (email) => {
   try {
@@ -76,7 +72,6 @@ export const requestPasswordReset = async (email) => {
       { email },
       { headers: { "Content-Type": "application/json" } }
     );
-
     return {
       success: response.status === 200,
       message: response.data.message || "Check your email for reset link",
@@ -96,7 +91,6 @@ export const resetPassword = async (token, newPassword) => {
       { token, newPassword },
       { headers: { "Content-Type": "application/json" } }
     );
-
     return {
       success: response.status === 200,
       message: response.data.message || "Password reset successful",
@@ -117,12 +111,7 @@ export const verifyToken = async () => {
     const response = await axios.get(`${API_URL}api/v1/auth/userprofile`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
-    if (response.status === 200 && response.data.user) {
-      return { valid: true, user: response.data.user };
-    } else {
-      return { valid: false };
-    }
+    return { valid: response.status === 200 && !!response.data.user, user: response.data.user };
   } catch {
     return { valid: false };
   }
@@ -131,7 +120,6 @@ export const verifyToken = async () => {
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  console.log("User after removal:", localStorage.getItem("user"));
   window.dispatchEvent(
     new CustomEvent("auth-state-changed", { detail: { loggedIn: false } })
   );
