@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import { useAuth } from "../hooks/useAuth";
+import { downloadImage, downloadPDF } from "../utils/exportUtils";
 
 const HypotheticalPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-
   const { isLoggedIn } = useAuth();
 
   const sireId = searchParams.get("sireid");
@@ -25,6 +25,8 @@ const HypotheticalPedigreePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [comingSoon, setComingSoon] = useState(false);
+
+  const tableRef = useRef();
 
   useEffect(() => {
     const fetchPedigree = async () => {
@@ -68,7 +70,6 @@ const HypotheticalPedigreePage = () => {
       window.dispatchEvent(event);
       return;
     }
-
     setSearchParams({ sireid: sireId, damid: damId, gen: newGen });
   };
 
@@ -188,9 +189,27 @@ const HypotheticalPedigreePage = () => {
 
           {!loading && !error && !comingSoon && pedigree?.pedigree && (
             <div className="overflow-x-auto">
-              <table className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full min-w-[768px] break-words">
+              <table
+                ref={tableRef}
+                className="pedigree-table table-auto bg-white border-collapse rounded-xl text-black border border-gray-700 w-full min-w-[768px] break-words"
+              >
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
+
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => downloadImage(tableRef.current, "hypo-pedigree.png")}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Download as Image
+                </button>
+                <button
+                  onClick={() => downloadPDF(tableRef.current, "hypo-pedigree.pdf")}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Download as PDF
+                </button>
+              </div>
             </div>
           )}
 
