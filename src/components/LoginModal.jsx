@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { verifyLogin } from "../services/authService.js";
+import { verifyLogin, handleSSOCallback } from "../services/authService.js";
 import { validateEmail } from "../utils/validation";
-import { Eye, EyeOff } from "lucide-react"; // 👁️ icons
+import { Eye, EyeOff } from "lucide-react";
+import { useGoogleLogin } from "@react-oauth/google";
 
 const LoginModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,8 +11,7 @@ const LoginModal = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ email: "", password: "" });
-
-  const [showPassword, setShowPassword] = useState(false); // NEW state
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -68,19 +68,33 @@ const LoginModal = () => {
     );
   };
 
-  const handleForgotPassword = () => {
-    setIsOpen(false);
-    window.dispatchEvent(
-      new CustomEvent("open-forgot-password-modal", {
-        detail: { email: form.email },
-      })
-    );
-  };
-
   const handleClose = () => {
     setIsOpen(false);
     setOpenReason(null);
   };
+
+  // Google SSO hook
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const result = await handleSSOCallback(tokenResponse.code, "google");
+        if (result.success) {
+          window.dispatchEvent(
+            new CustomEvent("auth-state-changed", {
+              detail: { loggedIn: true },
+            })
+          );
+          navigate("/dashboard", { replace: true });
+        } else {
+          setError(result.message);
+        }
+      } catch (err) {
+        setError("Google login failed. Please try again.");
+      }
+    },
+    flow: "auth-code", // secure OAuth flow
+  });
+
   if (!isOpen) return null;
 
   return (
@@ -101,6 +115,7 @@ const LoginModal = () => {
             Authentication Required. Please log in to continue.
           </p>
 
+          {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -173,6 +188,21 @@ const LoginModal = () => {
             </button>
           </form>
 
+          {/* Divider */}
+          <div className="my-6 flex items-center">
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="px-3 text-sm text-slate-400">OR</span>
+            <div className="flex-grow border-t border-slate-200"></div>
+          </div>
+
+          {/* Google SSO Button */}
+          <button
+            onClick={() => googleLogin()}
+            className="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center"
+          >
+            Sign in with Google 🚀
+          </button>
+
           <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-slate-600">
               Want to register a new account?{" "}
@@ -183,15 +213,6 @@ const LoginModal = () => {
                 Sign Up
               </button>
             </p>
-            {/* <p className="text-sm text-slate-600">
-              Forgot your password?{" "}
-              <button
-                onClick={handleForgotPassword}
-                className="text-blue-600 font-semibold hover:underline"
-              >
-                Reset Password
-              </button>
-            </p> */}
           </div>
         </div>
       </div>
