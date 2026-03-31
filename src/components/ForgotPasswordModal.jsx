@@ -34,6 +34,13 @@ const ForgotPasswordModal = () => {
     setLoading(false);
   };
 
+  const handleReturnToLogin = () => {
+    setIsOpen(false);
+    window.dispatchEvent(
+      new CustomEvent("open-login-modal", { detail: { reason: "manual" } })
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -50,11 +57,29 @@ const ForgotPasswordModal = () => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
           />
-          {message && <div className="text-sm text-red-600">{message}</div>}
-          <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-lg">
+          {message && (
+            <div className={`text-sm p-3 rounded-lg border ${
+              message.toLowerCase().includes('failed') || message.toLowerCase().includes('valid') 
+                ? 'text-red-600 bg-red-50 border-red-100' 
+                : 'text-green-800 bg-green-50 border-green-100'
+            }`}>
+              {message}
+            </div>
+          )}
+          <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold rounded-lg">
             {loading ? "Sending..." : "Send Reset Link"}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={handleReturnToLogin}
+              className="text-sm text-slate-500 hover:text-blue-600 font-semibold"
+            >
+              ← Back to Login
+            </button>
+        </div>
       </div>
     </div>
   );

@@ -1,127 +1,113 @@
-import axios from "axios";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  sendPasswordResetEmail, 
+  confirmPasswordReset, 
+  signInWithPopup, 
+  sendEmailVerification,
+  updateProfile
+} from "firebase/auth";
+import { auth, googleProvider } from "../config/firebase";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
-// --- PRIVATE HELPERS ---
-const saveAuthData = (data) => {
-  if (data.token) {
-    localStorage.setItem("token", data.token);
-  }
-  if (data.user) {
-    localStorage.setItem("user", JSON.stringify(data.user));
-  }
-  window.dispatchEvent(
-    new CustomEvent("auth-state-changed", { detail: { loggedIn: true } })
-  );
+// Helper to save minimal info and dispatch event for consistency with old behavior
+const dispatchAuthChange = (loggedIn) => {
+  window.dispatchEvent(new CustomEvent("auth-state-changed", { detail: { loggedIn } }));
 };
-
-// --- EXPORTED FUNCTIONS ---
 
 export const verifyLogin = async (email, password) => {
   try {
-    const response = await axios.post(`${API_URL}api/v1/auth/login`, {
-      loginKey: email,
-      password,
-    });
-
-    if (response.status === 200 && response.data.token) {
-      saveAuthData(response.data);
-      return { success: true, data: response.data };
-    }
-    return { success: false, message: response.data.message || "Invalid credentials" };
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const token = await userCredential.user.getIdToken();
+    localStorage.setItem("token", token);
+    dispatchAuthChange(true);
+    return { success: true, data: { user: userCredential.user, token } };
   } catch (error) {
-    return { success: false, message: error.response?.data?.message || "Login failed" };
-  }
-};
-
-export const handleSSOCallback = async (code, provider = "google") => {
-  try {
-    const response = await axios.post(`${API_URL}api/v1/auth/${provider}/callback`, { code });
-
-    if (response.status === 200 && response.data.token) {
-      saveAuthData(response.data);
-      return { success: true, data: response.data };
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        return { success: false, message: "Invalid credentials" };
     }
-    return { success: false, message: "SSO verification failed" };
-  } catch (error) {
-    return { success: false, message: error.response?.data?.message || "SSO Error" };
+    return { success: false, message: error.message || "Login failed" };
   }
-};
-
-export const loginWithSSO = (provider) => {
-  window.location.href = `${API_URL}api/v1/auth/${provider}`;
 };
 
 export const registerUser = async (username, email, password) => {
   try {
-    const response = await axios.post(`${API_URL}api/v1/auth/signup`, {
-      username,
-      email,
-      password,
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update profile with username
+    await updateProfile(userCredential.user, { displayName: username });
+    
+    // Send email verification with redirect url back to dashboard
+    await sendEmailVerification(userCredential.user, {
+      url: window.location.origin + '/dashboard'
     });
-    return { success: response.status === 201 || response.status === 200, data: response.data };
+    
+    // Firebase auto signs in upon creation, we can dispatch status or sign them out to enforce verification
+    // For now, let's keep them signed in but verification pending
+    const token = await userCredential.user.getIdToken();
+    localStorage.setItem("token", token);
+    dispatchAuthChange(true);
+    
+    return { success: true, data: userCredential.user };
   } catch (error) {
-    return { success: false, message: error.response?.data?.message || "Registration failed" };
+    if (error.code === 'auth/email-already-in-use') {
+        return { success: false, message: "Email is already registered" };
+    }
+    return { success: false, message: error.message || "Registration failed" };
   }
 };
 
 export const requestPasswordReset = async (email) => {
   try {
-    const response = await axios.post(
-      `${API_URL}api/v1/auth/forgot-password`,
-      { email },
-      { headers: { "Content-Type": "application/json" } }
-    );
-    return {
-      success: response.status === 200,
-      message: response.data.message || "Check your email for reset link",
-    };
+    await sendPasswordResetEmail(auth, email);
+    return { success: true, message: "Check your email for the reset link" };
   } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || "Failed to send reset link",
-    };
+    return { success: false, message: error.message || "Failed to send reset link" };
   }
 };
 
-export const resetPassword = async (token, newPassword) => {
+export const resetPassword = async (oobCode, newPassword) => {
   try {
-    const response = await axios.post(
-      `${API_URL}api/v1/auth/reset-password`,
-      { token, newPassword },
-      { headers: { "Content-Type": "application/json" } }
-    );
-    return {
-      success: response.status === 200,
-      message: response.data.message || "Password reset successful",
-    };
+    await confirmPasswordReset(auth, oobCode, newPassword);
+    return { success: true, message: "Password reset successful. You can now login." };
   } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || "Failed to reset password",
-    };
+    return { success: false, message: error.message || "Failed to reset password. The link might be expired." };
   }
+};
+
+export const loginWithSSO = async () => {
+  try {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    const token = await userCredential.user.getIdToken();
+    localStorage.setItem("token", token);
+    dispatchAuthChange(true);
+    return { success: true, data: { user: userCredential.user, token } };
+  } catch (error) {
+    return { success: false, message: error.message || "SSO Error" };
+  }
+};
+
+export const handleSSOCallback = async (code, provider = "google") => {
+    // Deprecated with Firebase since we use popup which handles its own callback
+    return { success: false, message: "Use loginWithSSO for Firebase popup" };
 };
 
 export const verifyToken = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return { valid: false };
-
-  try {
-    const response = await axios.get(`${API_URL}api/v1/auth/userprofile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return { valid: response.status === 200 && !!response.data.user, user: response.data.user };
-  } catch {
+    // Replaced entirely by onAuthStateChanged in useAuth.js, fallback utility
+    const user = auth.currentUser;
+    if (user) {
+        return { valid: true, user };
+    }
     return { valid: false };
-  }
-};
+}
 
-export const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  window.dispatchEvent(
-    new CustomEvent("auth-state-changed", { detail: { loggedIn: false } })
-  );
-  window.location.href = "/";
+export const logout = async () => {
+  try {
+    await signOut(auth);
+    localStorage.removeItem("token");
+    dispatchAuthChange(false);
+    window.location.href = "/";
+  } catch (error) {
+    console.error("Logout failed", error);
+  }
 };

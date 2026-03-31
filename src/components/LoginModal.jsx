@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { verifyLogin, handleSSOCallback } from "../services/authService.js";
+import { verifyLogin, loginWithSSO } from "../services/authService.js";
 import { validateEmail } from "../utils/validation";
 import { Eye, EyeOff } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
 
 const LoginModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,32 +67,34 @@ const LoginModal = () => {
     );
   };
 
+  const handleSwitchToForgotPassword = () => {
+    setIsOpen(false);
+    window.dispatchEvent(
+      new CustomEvent("open-forgot-password-modal", {
+        detail: { email: form.email, reason: "manual" },
+      })
+    );
+  };
+
   const handleClose = () => {
     setIsOpen(false);
     setOpenReason(null);
   };
 
-  // Google SSO hook
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const result = await handleSSOCallback(tokenResponse.code, "google");
-        if (result.success) {
-          window.dispatchEvent(
-            new CustomEvent("auth-state-changed", {
-              detail: { loggedIn: true },
-            })
-          );
-          navigate("/dashboard", { replace: true });
-        } else {
-          setError(result.message);
-        }
-      } catch (err) {
-        setError("Google login failed. Please try again.");
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await loginWithSSO();
+      if (result.success) {
+        setIsOpen(false);
+        setOpenReason(null);
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError(result.message);
       }
-    },
-    flow: "auth-code", // secure OAuth flow
-  });
+    } catch (err) {
+      setError("Google login failed. Please try again.");
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -131,9 +132,18 @@ const LoginModal = () => {
             </div>
 
             <div className="relative">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Password
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleSwitchToForgotPassword}
+                  className="text-xs text-blue-600 font-medium hover:underline focus:outline-none"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -197,7 +207,7 @@ const LoginModal = () => {
 
           {/* Google SSO Button */}
           <button
-            onClick={() => googleLogin()}
+            onClick={handleGoogleLogin}
             className="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center"
           >
             Sign in with Google 🚀

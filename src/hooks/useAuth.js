@@ -1,40 +1,46 @@
 import { useState, useEffect } from "react";
-import { verifyToken, logout } from "../services/authService";
+import { logout } from "../services/authService";
+import { auth } from "../config/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export const useAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const result = await verifyToken();
-      if (result.valid) {
+    // Firebase realtime listener
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
         setIsLoggedIn(true);
-        setUser(result.user);
+        setUser(currentUser);
+        // Refresh token in local storage on changes
+        const token = await currentUser.getIdToken();
+        localStorage.setItem("token", token);
       } else {
+        setIsLoggedIn(false);
+        setUser(null);
+        localStorage.removeItem("token");
+      }
+    });
+
+    // Keeping custom event for immediate UI updates if triggered elsewhere
+    const handleAuthChange = (e) => {
+      if (!e.detail?.loggedIn) {
         setIsLoggedIn(false);
         setUser(null);
       }
     };
-    checkAuth();
-
-    const handleAuthChange = (e) => {
-      setIsLoggedIn(e.detail?.loggedIn || false);
-      if (!e.detail?.loggedIn) {
-        setUser(null);
-      } else {
-        checkAuth();
-      }
-    };
 
     window.addEventListener("auth-state-changed", handleAuthChange);
-    return () => window.removeEventListener("auth-state-changed", handleAuthChange);
+    
+    return () => {
+        unsubscribe();
+        window.removeEventListener("auth-state-changed", handleAuthChange);
+    }
   }, []);
 
   const handleLogout = () => {
     logout();
-    setIsLoggedIn(false);
-    setUser(null);
   };
 
   return { isLoggedIn, user, logout: handleLogout };

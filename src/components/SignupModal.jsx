@@ -8,6 +8,7 @@ const SignupModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -34,6 +35,7 @@ const SignupModal = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccessMessage("");
 
     const { valid, message, sanitized } = validateEmail(form.email);
     if (!valid) {
@@ -67,7 +69,7 @@ const SignupModal = () => {
     );
 
     if (result.success) {
-      setIsOpen(false);
+      setSuccessMessage("Account created successfully! Please check your email to verify your account before accessing full features.");
       setForm({ username: "", email: "", password: "", confirmPassword: "" });
     } else {
       setError(result.message || "Registration failed. Try again.");
@@ -107,7 +109,21 @@ const SignupModal = () => {
             Join us to start searching our database.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {successMessage ? (
+            <div className="mt-6 text-center">
+              <div className="p-4 mb-6 bg-green-50 rounded-xl border border-green-100">
+                <p className="text-green-800 font-medium">{successMessage}</p>
+              </div>
+              <button
+                onClick={handleClose}
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Username
@@ -204,6 +220,8 @@ const SignupModal = () => {
               </button>
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>
