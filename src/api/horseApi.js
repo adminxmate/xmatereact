@@ -143,4 +143,68 @@ export const getDetailedHorses = async ({ page = 1, limit = 10, search = "" }) =
   }
 };
 
+export const getRealPedigree = async (horseId, gen = 3) => {
+  try {
+    const response = await API.get("/horses/real", {
+      params: { horseid: horseId, gen },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Real pedigree fetch failed:", error);
+    throw error;
+  }
+};
+
+export const getHypotheticalPedigree = async (sireId, damId) => {
+  try {
+    const response = await API.get("/horses/hypo", {
+      params: { sireid: sireId, damid: damId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Hypothetical pedigree fetch failed:", error);
+    throw error;
+  }
+};
+
+export const getHorsePedigree = async (id) => {
+  try {
+    const response = await API.get(`/horses/${id}/pedigree`);
+    return response.data;
+  } catch (error) {
+    console.error("Horse pedigree fetch failed:", error);
+    throw error;
+  }
+};
+
+export const createHorse = async (horseData) => {
+  try {
+    const response = await API.post("/horses", horseData);
+    return response.data;
+  } catch (error) {
+    console.error("Create horse failed:", error);
+    throw error;
+  }
+};
+
+export const updateHorse = async (id, horseData) => {
+  try {
+    const response = await API.put(`/horses/${id}`, horseData);
+    return response.data;
+  } catch (error) {
+    console.error("Update horse failed:", error);
+    throw error;
+  }
+};
+
+export const deleteHorse = async (id) => {
+  try {
+    const response = await API.delete(`/horses/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete horse failed:", error);
+    throw error;
+  }
+};
+
 export default API;

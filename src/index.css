@@ -12,6 +12,7 @@ body {
   position: relative;
   z-index: 1;
 }
+
 .pedigree-table::after {
   content: "";
   position: absolute;
@@ -19,7 +20,7 @@ body {
   left: 60px;
   width: 100px;
   height: 100px;
-  background: url("../logo.png") no-repeat center center;
+  background: url("../public/logo.png") no-repeat center center;
   background-size: contain;
   opacity: 0.1;
   transform: translate(-50%, -50%);
@@ -45,10 +46,9 @@ body {
   width: 1px;
 }
 
-.pedigree-table .borderbottom::before { 
+.pedigree-table .borderbottom::before {
   left: 0;
   right: 0;
   bottom: 0;
   height: 1px;
 }
-

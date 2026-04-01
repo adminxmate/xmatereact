@@ -1,21 +1,23 @@
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  sendPasswordResetEmail, 
-  confirmPasswordReset, 
-  signInWithPopup, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  confirmPasswordReset,
+  signInWithPopup,
   sendEmailVerification,
   updateProfile
 } from "firebase/auth";
 import { auth, googleProvider } from "../config/firebase";
+import API from "../api/horseApi";
 
 // Helper to save minimal info and dispatch event for consistency with old behavior
 const dispatchAuthChange = (loggedIn) => {
   window.dispatchEvent(new CustomEvent("auth-state-changed", { detail: { loggedIn } }));
 };
 
-export const verifyLogin = async (email, password) => {
+// 1. Firebase email/password login (if still used)
+export const firebaseLogin = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const token = await userCredential.user.getIdToken();
@@ -23,36 +25,83 @@ export const verifyLogin = async (email, password) => {
     dispatchAuthChange(true);
     return { success: true, data: { user: userCredential.user, token } };
   } catch (error) {
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        return { success: false, message: "Invalid credentials" };
-    }
-    return { success: false, message: error.message || "Login failed" };
+    return { success: false, message: error.message || "User Login failed" };
   }
 };
 
-export const registerUser = async (username, email, password) => {
+// 2. Custom Backend Login
+export const login = async (email, password) => {
+  // 1. Attempt Firebase Login first (covers SSO reset users)
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Update profile with username
-    await updateProfile(userCredential.user, { displayName: username });
-    
-    // Send email verification with redirect url back to dashboard
-    await sendEmailVerification(userCredential.user, {
-      url: window.location.origin + '/dashboard'
-    });
-    
-    // Firebase auto signs in upon creation, we can dispatch status or sign them out to enforce verification
-    // For now, let's keep them signed in but verification pending
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const token = await userCredential.user.getIdToken();
     localStorage.setItem("token", token);
     dispatchAuthChange(true);
-    
+    return { success: true, data: { user: userCredential.user, token } };
+  } catch (fbError) {
+    // 2. Fallback to Custom Backend (covers legacy users)
+    try {
+      const response = await API.post("/auth/login", { email, password });
+      const { token, user } = response.data.data || response.data;
+      if (token) {
+        localStorage.setItem("token", token);
+        dispatchAuthChange(true);
+        return { success: true, data: { user, token } };
+      }
+      return { success: false, message: "No token received" };
+    } catch (error) {
+      if (error.response?.status === 403) {
+        return { success: false, message: "Please verify your email before logging in.", needsVerification: true };
+      }
+      // Return appropriate error message
+      const finalMsg = error.response?.data?.message || fbError.message || "Login failed";
+      return { success: false, message: finalMsg };
+    }
+  }
+}
+
+// 3. Custom Backend Signup
+export const signup = async (username, email, password) => {
+  try {
+    const response = await API.post("/auth/signup", { username, email, password });
+    return { success: true, data: response.data.data || response.data };
+  } catch (error) {
+    return { success: false, message: error.response?.data?.message || "Signup failed" };
+  }
+}
+
+// 4. Role & Profile Fetch
+export const getRole = async () => {
+  try {
+    const response = await API.get("/auth/role");
+    return { success: true, data: response.data.data || response.data }; // Returns { role, id }
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+export const getUserProfile = async () => {
+  try {
+    const response = await API.get("/auth/userprofile");
+    return { success: true, data: response.data.data || response.data };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+export const registerUser = async (username, email, password) => {
+  // Legacy Firebase registration wrapper
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(userCredential.user, { displayName: username });
+    await sendEmailVerification(userCredential.user, {
+      url: window.location.origin + '/dashboard'
+    });
+    const token = await userCredential.user.getIdToken();
+    localStorage.setItem("token", token);
+    dispatchAuthChange(true);
     return { success: true, data: userCredential.user };
   } catch (error) {
-    if (error.code === 'auth/email-already-in-use') {
-        return { success: false, message: "Email is already registered" };
-    }
     return { success: false, message: error.message || "Registration failed" };
   }
 };
@@ -87,23 +136,45 @@ export const loginWithSSO = async () => {
   }
 };
 
-export const handleSSOCallback = async (code, provider = "google") => {
-    // Deprecated with Firebase since we use popup which handles its own callback
-    return { success: false, message: "Use loginWithSSO for Firebase popup" };
+export const handleSSOCallback = async () => {
+  return { success: false, message: "Use loginWithSSO for authentication popup" };
 };
 
 export const verifyToken = async () => {
-    // Replaced entirely by onAuthStateChanged in useAuth.js, fallback utility
-    const user = auth.currentUser;
-    if (user) {
-        return { valid: true, user };
-    }
-    return { valid: false };
+  const user = auth.currentUser;
+  if (user) {
+    return { valid: true, user };
+  }
+  const token = localStorage.getItem("token");
+  if (token) {
+    return { valid: true }; // Minimal check
+  }
+  return { valid: false };
 }
+
+export const resendVerification = async () => {
+  try {
+    // 1. Try Firebase first if user is logged in via Firebase
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser, {
+        url: window.location.origin + '/dashboard'
+      });
+      return { success: true, message: "Verification email resent." };
+    }
+    // 2. Fallback to Custom Backend
+    const response = await API.post("/auth/resend-verification");
+    return { success: true, message: response.data?.message || "Verification email resent via Backend." };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Failed to resend verification."
+    };
+  }
+};
 
 export const logout = async () => {
   try {
-    await signOut(auth);
+    await signOut(auth).catch(() => { }); // Optional catch for Firebase logout
     localStorage.removeItem("token");
     dispatchAuthChange(false);
     window.location.href = "/";
