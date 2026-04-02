@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { registerUser } from "../services/authService";
+import { signup } from "../services/authService";
 import { validateEmail } from "../utils/validation";
-import { Eye, EyeOff } from "lucide-react";
-
 
 const SignupModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -15,11 +14,8 @@ const SignupModal = () => {
     confirmPassword: "",
   });
 
-  // NEW: state for toggling password visibility
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   useEffect(() => {
+// ... existing state initialization ...
     const handleOpen = (e) => {
       setIsOpen(true);
       if (e.detail?.email) {
@@ -34,6 +30,7 @@ const SignupModal = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccessMessage("");
 
     const { valid, message, sanitized } = validateEmail(form.email);
     if (!valid) {
@@ -60,14 +57,14 @@ const SignupModal = () => {
       return;
     }
 
-    const result = await registerUser(
+    const result = await signup(
       form.username.trim(),
       sanitized,
       form.password,
     );
 
     if (result.success) {
-      setIsOpen(false);
+      setSuccessMessage("Account created successfully! Please check your email to verify your account before accessing full features.");
       setForm({ username: "", email: "", password: "", confirmPassword: "" });
     } else {
       setError(result.message || "Registration failed. Try again.");
@@ -107,7 +104,21 @@ const SignupModal = () => {
             Join us to start searching our database.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          {successMessage ? (
+            <div className="mt-6 text-center">
+              <div className="p-4 mb-6 bg-green-50 rounded-xl border border-green-100">
+                <p className="text-green-800 font-medium">{successMessage}</p>
+              </div>
+              <button
+                onClick={handleClose}
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Username
@@ -134,48 +145,38 @@ const SignupModal = () => {
               />
             </div>
 
-            <div className="relative">
+            <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Password
               </label>
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                className="relative w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg 
-               focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              <div className="mt-1 relative">
+                <input
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg 
+                    focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                />
+              </div>
             </div>
 
-            <div className="relative">
+            <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Confirm Password
               </label>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                className="relative w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg 
-               focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10"
-                value={form.confirmPassword}
-                onChange={(e) =>
-                  setForm({ ...form, confirmPassword: e.target.value })
-                }
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              <div className="mt-1 relative">
+                <input
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg 
+                    focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    value={form.confirmPassword}
+                    onChange={(e) =>
+                    setForm({ ...form, confirmPassword: e.target.value })
+                    }
+                />
+              </div>
             </div>
 
             {error && (
@@ -204,6 +205,8 @@ const SignupModal = () => {
               </button>
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

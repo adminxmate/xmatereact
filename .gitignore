@@ -8,6 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+plans_ai
+plans_ai/*
+dist
 dist-ssr
 *.local
 

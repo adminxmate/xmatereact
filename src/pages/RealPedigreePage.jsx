@@ -8,7 +8,7 @@ import { downloadImage, downloadPDF } from "../utils/exportUtils";
 const RealPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, is_verified } = useAuth();
 
   const horseId = searchParams.get("horseid");
   useEffect(() => {
@@ -177,20 +177,22 @@ const RealPedigreePage = () => {
                 <tbody>{buildRows(pedigree.pedigree)}</tbody>
               </table>
 
-              <div className="flex justify-center gap-4 mt-6">
-                <button
-                  onClick={() => downloadImage(tableRef.current, `${safeFileName}_real_pedigree.png`)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Download as Image
-                </button>
-                <button
-                  onClick={() => downloadPDF(tableRef.current, `${safeFileName}_real_pedigree.pdf`)}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Download as PDF
-                </button>
-              </div>
+              {isLoggedIn && is_verified && (
+                <div className="flex justify-center gap-4 mt-6">
+                  <button
+                    onClick={() => downloadImage(tableRef.current, `${safeFileName}_real_pedigree.png`)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Download as Image
+                  </button>
+                  <button
+                    onClick={() => downloadPDF(tableRef.current, `${safeFileName}_real_pedigree.pdf`)}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    Download as PDF
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

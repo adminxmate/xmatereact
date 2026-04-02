@@ -70,7 +70,7 @@ const Footer = () => {
         </div>
         <div className="w-full py-2 bg-black mt-3">
           <p className="text-center text-white text-sm mb-0">
-            © Copyright xmate 2025, Designed &amp; Powered by xmate.
+            © Copyright XMate 2025, Designed &amp; Powered by XMate.
           </p>
         </div>
       </footer>

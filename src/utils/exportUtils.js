@@ -1,7 +1,7 @@
 import { domToCanvas } from 'modern-screenshot';
 import jsPDF from 'jspdf';
 
-const LOGO_URL = "../logo.png";
+const LOGO_URL = "../public/logo.png";
 
 const loadExternalImage = (src) => {
   return new Promise((resolve, reject) => {
@@ -19,16 +19,16 @@ export const downloadImage = async (element, filename = "export.png") => {
   try {
     const canvas = await domToCanvas(element, { scale: 2 });
     const ctx = canvas.getContext('2d');
-    
+
     const watermark = await loadExternalImage(LOGO_URL);
 
     const aspectRatio = watermark.width / watermark.height;
     const w = 200;
     const h = w / aspectRatio;
-    
+
     const x = (canvas.width * 0.15) - (w / 2) - 40;
     const y = (canvas.height / 2) - (h / 2) - 40;
-    
+
     ctx.globalAlpha = 0.3;
     ctx.drawImage(watermark, x, y, w, h);
     ctx.globalAlpha = 1.0;
@@ -51,7 +51,7 @@ export const downloadPDF = async (element, filename = "export.pdf") => {
       scale: 2,
       backgroundColor: '#ffffff',
     });
-    
+
     const imgData = canvas.toDataURL("image/png");
 
     const pxToMm = 0.264583;
@@ -59,9 +59,9 @@ export const downloadPDF = async (element, filename = "export.pdf") => {
     const canvasHeightMm = canvas.height * pxToMm / 2;
 
     const pdf = new jsPDF({
-        orientation: canvasWidthMm > canvasHeightMm ? "l" : "p",
-        unit: "mm",
-        format: [canvasWidthMm, canvasHeightMm]
+      orientation: canvasWidthMm > canvasHeightMm ? "l" : "p",
+      unit: "mm",
+      format: [canvasWidthMm, canvasHeightMm]
     });
 
     pdf.addImage(imgData, "PNG", 0, 0, canvasWidthMm, canvasHeightMm);
@@ -73,12 +73,12 @@ export const downloadPDF = async (element, filename = "export.pdf") => {
 
     pdf.setGState(new pdf.GState({ opacity: 0.3 }));
     pdf.addImage(
-        LOGO_URL, 
-        "PNG",
-        (canvasWidthMm * 0.15) - (logoHeight / 2) - margin,
-        (canvasHeightMm / 2) - (logoHeight / 2) - margin, 
-        logoWidth, 
-        logoHeight
+      LOGO_URL,
+      "PNG",
+      (canvasWidthMm * 0.15) - (logoHeight / 2) - margin,
+      (canvasHeightMm / 2) - (logoHeight / 2) - margin,
+      logoWidth,
+      logoHeight
     );
     pdf.setGState(new pdf.GState({ opacity: 1.0 }));
 

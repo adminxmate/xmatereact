@@ -82,7 +82,12 @@ const PlansPage = () => {
                   </li>
                 ))}
               </ul>
-              {/* <button className="mt-auto bg-[#e23e44] hover:bg-red-600 text-white font-bold py-3 px-6 rounded transition">Get Started</button> */}
+              <a
+                href={`mailto:team@xmate.com.au?subject=Inquiry about ${displayedPlan.name} Plan (${billingCycle})&body=Hello XMate Team,%0D%0A%0D%0AI am interested in purchasing the ${displayedPlan.name} plan on a ${billingCycle} basis for ${getCurrencySymbol(currency)}${convertCurrency(convertPrice(displayedPlan.price, billingCycle), currency)}.`}
+                className="mt-auto bg-[#e23e44] hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-105 inline-block text-center shadow-lg"
+              >
+                Inquire Now
+              </a>
             </div>
           </div>
         ) : (

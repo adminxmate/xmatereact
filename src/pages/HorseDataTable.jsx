@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { getDetailedHorses } from "../api/horseApi";
-import { Pencil, Trash2, ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { getDetailedHorses, deleteHorse } from "../api/horseApi";
+import { Pencil, Trash2, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import MainLayout from "../components/Layout/MainLayout";
 import { useNavigate } from "react-router-dom";
 import { formatDate } from "../utils/formatDate";
+import { useAuth } from "../hooks/useAuth";
 
 const HorseDataTable = () => {
+  const { profile, is_admin, is_owner, is_trainer } = useAuth();
   const [horses, setHorses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -15,17 +17,30 @@ const HorseDataTable = () => {
   const [filters, setFilters] = useState({ name: "", sire: "", dam: "", date: "", damsire: "" });
   const navigate = useNavigate();
 
+  const load = async () => {
+    setLoading(true);
+    const res = await getDetailedHorses({ page, search: filters.name });
+    setHorses(res.data);
+    setTotalPages(res.lastPage);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      // Fetches based on primary Name search and Page
-      const res = await getDetailedHorses({ page, search: filters.name });
-      setHorses(res.data);
-      setTotalPages(res.lastPage);
-      setLoading(false);
-    };
-    load();
+    const timer = setTimeout(() => {
+      load();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [page, filters.name]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this horse?")) return;
+    try {
+      await deleteHorse(id);
+      load(); // Reload table
+    } catch {
+      alert("Failed to delete horse. You may not have permission.");
+    }
+  };
 
   // Client-side filtering for secondary fields (Sire/Dam/DamSire)
   const filteredData = horses.filter(
@@ -36,13 +51,32 @@ const HorseDataTable = () => {
       (h.foaling_date?.includes(filters.date) || !filters.date)
   );
 
+  const canManage = is_admin || is_owner || is_trainer;
+
+  const canEditHorse = (horse) => {
+    if (is_admin) return true;
+    if ((is_owner || is_trainer) && horse.owner_id === profile?.id) return true;
+    return false;
+  };
+
   return (
     <MainLayout>
       <div className="min-h-screen bg-[#333538] text-white p-4 md:p-10 font-sans">
         <div className="max-w-7xl mx-auto">
-          <button onClick={() => navigate("/")} className="flex items-center gap-2 text-gray-400 mb-6 hover:text-white transition">
-            <ArrowLeft size={18} /> Back to Search
-          </button>
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <button onClick={() => navigate("/")} className="flex items-center gap-2 text-gray-400 hover:text-white transition">
+              <ArrowLeft size={18} /> Back to Search
+            </button>
+            
+            {canManage && (
+              <button 
+                onClick={() => navigate("/add-horse")}
+                className="bg-[#e23e44] hover:bg-[#c13238] px-6 py-2 rounded font-bold flex items-center gap-2 transition text-sm uppercase italic"
+              >
+                <Plus size={18} /> Add New Horse
+              </button>
+            )}
+          </div>
 
           <h1 className="text-2xl font-black italic tracking-tighter uppercase mb-8">Registry Management</h1>
 
@@ -104,12 +138,24 @@ const HorseDataTable = () => {
                         <td className="p-4 text-gray-400 text-xs italic">{horse.damName || "---"}</td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-3 text-gray-500">
-                            <button className="hover:text-blue-400 transition">
-                              <Pencil size={16} />
-                            </button>
-                            <button className="hover:text-[#e23e44] transition">
-                              <Trash2 size={16} />
-                            </button>
+                            {canEditHorse(horse) ? (
+                              <>
+                                <button 
+                                  onClick={() => navigate(`/edit-horse/${horse.id}`)}
+                                  className="hover:text-blue-400 transition"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDelete(horse.id)}
+                                  className="hover:text-[#e23e44] transition"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-[10px] uppercase opacity-30">View Only</span>
+                            )}
                           </div>
                         </td>
                       </tr>
