@@ -83,12 +83,15 @@ jobs:
         id: deploy
         run: |
           SOURCE_DIR="${GITHUB_WORKSPACE}/dist"
-          REMOTE_DIR="/var/www/html/xmatereact"
+          REMOTE_DIR="/var/www/html/xmatereact/dist"
           REMOTE_USER="${{ secrets.EC2_USER }}"
           REMOTE_HOST="${{ secrets.EC2_HOST }}"
+          
+          # Ensure target directory exists
+          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo mkdir -p $REMOTE_DIR && sudo chown $REMOTE_USER:www-data $REMOTE_DIR"
+          
           if [ -d "$SOURCE_DIR" ]; then
-            # --no-perms, --no-owner, --no-group: Respect server-side security
-            # --exclude: Protect sensitive or unnecessary files
+            # Sync directly to /dist/ while ignoring permissions and root project files
             rsync -avz --delete \
               --no-perms --no-owner --no-group \
               --exclude=".env" \
@@ -127,17 +130,17 @@ jobs:
         run: |
           REMOTE_USER="${{ secrets.EC2_USER }}"
           REMOTE_HOST="${{ secrets.EC2_HOST }}"
-          echo "Deployment failed, attempting rollback to previous version..."
+          echo "Deployment failed, attempting rollback of /dist to previous version..."
           ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "
-            if [ -d /var/www/html/xmatereact.backup ]; then
-              # Rollback using rsync to keep ownership/permissions clean
+            if [ -d /var/www/html/xmatereact.backup/dist ]; then
+              # Rollback ONLY the dist folder to avoid touching server-side root files
               sudo rsync -avz --delete \
                 --no-perms --no-owner --no-group \
-                /var/www/html/xmatereact.backup/ /var/www/html/xmatereact
+                /var/www/html/xmatereact.backup/dist/ /var/www/html/xmatereact/dist
               sudo systemctl restart nginx
               echo 'Rollback complete'
             else
-              echo 'No backup found to rollback to'
+              echo 'No backup of /dist found to rollback to'
               exit 1
             fi
           "
