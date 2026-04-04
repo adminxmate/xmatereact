@@ -1,5 +1,8 @@
 name: CI/CD
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -84,7 +87,15 @@ jobs:
           REMOTE_USER="${{ secrets.EC2_USER }}"
           REMOTE_HOST="${{ secrets.EC2_HOST }}"
           if [ -d "$SOURCE_DIR" ]; then
-            rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" "$SOURCE_DIR/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
+            # --no-perms, --no-owner, --no-group: Respect server-side security
+            # --exclude: Protect sensitive or unnecessary files
+            rsync -avz --delete \
+              --no-perms --no-owner --no-group \
+              --exclude=".env" \
+              --exclude="node_modules" \
+              --exclude=".git" \
+              -e "ssh -o StrictHostKeyChecking=no" \
+              "$SOURCE_DIR/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
           else
             echo "Build directory ($SOURCE_DIR) not found"; exit 1
           fi
@@ -119,7 +130,10 @@ jobs:
           echo "Deployment failed, attempting rollback to previous version..."
           ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "
             if [ -d /var/www/html/xmatereact.backup ]; then
-              sudo rsync -a --delete /var/www/html/xmatereact.backup/ /var/www/html/xmatereact
+              # Rollback using rsync to keep ownership/permissions clean
+              sudo rsync -avz --delete \
+                --no-perms --no-owner --no-group \
+                /var/www/html/xmatereact.backup/ /var/www/html/xmatereact
               sudo systemctl restart nginx
               echo 'Rollback complete'
             else
