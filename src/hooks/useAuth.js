@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { logout, getRole, getUserProfile } from "../services/authService";
 import { auth } from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -12,7 +12,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [fetchingDetails, setFetchingDetails] = useState(false);
 
-  const fetchAuthDetails = async () => {
+  const fetchAuthDetails = useCallback(async () => {
     if (fetchingDetails) return;
     setFetchingDetails(true);
     try {
@@ -31,7 +31,7 @@ export const useAuth = () => {
     } finally {
       setFetchingDetails(false);
     }
-  };
+  }, [fetchingDetails]);
 
   const fetchUsersList = async () => {
     const { getUsers } = await import("../services/authService");
@@ -92,7 +92,7 @@ export const useAuth = () => {
         unsubscribe();
         window.removeEventListener("auth-state-changed", handleAuthChange);
     }
-  }, []);
+  }, [fetchAuthDetails]);
 
   const handleLogout = () => {
     logout();
