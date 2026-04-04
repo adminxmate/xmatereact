@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getDetailedHorses, deleteHorse } from "../api/horseApi";
 import { Pencil, Trash2, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import MainLayout from "../components/Layout/MainLayout";
@@ -17,20 +17,20 @@ const HorseDataTable = () => {
   const [filters, setFilters] = useState({ name: "", sire: "", dam: "", date: "", damsire: "" });
   const navigate = useNavigate();
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await getDetailedHorses({ page, search: filters.name });
     setHorses(res.data);
     setTotalPages(res.lastPage);
     setLoading(false);
-  };
+  }, [page, filters.name]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       load();
     }, 0);
     return () => clearTimeout(timer);
-  }, [page, filters.name]);
+  }, [load]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this horse?")) return;

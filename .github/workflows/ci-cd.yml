@@ -3,11 +3,13 @@ name: CI/CD
 on:
   push:
     branches:
-      - ci/setup-github-actions
       - main
+      - master
+      - ci/setup-github-actions
   pull_request:
     branches:
       - main
+      - master
 
 jobs:
   build-test:
@@ -28,6 +30,8 @@ jobs:
             ${{ runner.os }}-node-
       - name: Install dependencies
         run: npm ci
+      - name: Check Linting
+        run: npm run lint --if-present
       - name: Run tests
         run: npm test --if-present
       - name: Build
@@ -37,8 +41,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build
-          path: build
-
+          path: dist
+ 
   deploy-to-ec2:
     needs: build-test
     runs-on: ubuntu-latest
@@ -54,22 +58,31 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build
-          path: build
-      - name: Backup current live
+          path: dist
+      - name: Backup current live version
         run: |
           REMOTE_USER="${{ secrets.EC2_USER }}"
           REMOTE_HOST="${{ secrets.EC2_HOST }}"
-          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo cp -a /var/www/html/xmatereact /var/www/html/xmatereact.backup || true"
+          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "
+            sudo rm -rf /var/www/html/xmatereact.backup
+            if [ -d /var/www/html/xmatereact ]; then
+              sudo cp -a /var/www/html/xmatereact /var/www/html/xmatereact.backup
+              echo 'Backup created successfully'
+            else
+              echo 'No existing directory to backup'
+            fi
+          "
       - name: Rsync build to EC2
+        id: deploy
         run: |
-          SOURCE_DIR="${GITHUB_WORKSPACE}/build"
+          SOURCE_DIR="${GITHUB_WORKSPACE}/dist"
           REMOTE_DIR="/var/www/html/xmatereact"
           REMOTE_USER="${{ secrets.EC2_USER }}"
           REMOTE_HOST="${{ secrets.EC2_HOST }}"
           if [ -d "$SOURCE_DIR" ]; then
             rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" "$SOURCE_DIR/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
           else
-            echo "Build directory not found"; exit 1
+            echo "Build directory ($SOURCE_DIR) not found"; exit 1
           fi
       - name: Restart remote service
         run: |
@@ -77,6 +90,7 @@ jobs:
           REMOTE_HOST="${{ secrets.EC2_HOST }}"
           ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo systemctl restart nginx"
       - name: Health check
+        id: health_check
         if: ${{ secrets.APP_URL != '' }}
         run: |
           HEALTH_URL="${{ secrets.APP_URL }}"
@@ -85,22 +99,26 @@ jobs:
           for i in 1 2 3; do
             if curl -fsS "$HEALTH_URL"; then
               echo "Health check passed"
-              HEALTH_OK=1
-              break
+              exit 0
             else
               echo "Health check attempt $i failed"
               sleep 5
             fi
           done
-          if [ -z "$HEALTH_OK" ]; then
-            echo "Health check failed, attempting rollback"
-            REMOTE_USER="${{ secrets.EC2_USER }}"
-            REMOTE_HOST="${{ secrets.EC2_HOST }}"
-            ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo rsync -a /var/www/html/xmatereact.backup/ /var/www/html/xmatereact; sudo systemctl restart nginx"
-            if curl -fsS "$HEALTH_URL"; then
-              echo "Rollback health check passed"
+          exit 1
+      - name: Automatic Rollback on failure
+        if: failure()
+        run: |
+          REMOTE_USER="${{ secrets.EC2_USER }}"
+          REMOTE_HOST="${{ secrets.EC2_HOST }}"
+          echo "Deployment failed, attempting rollback to previous version..."
+          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "
+            if [ -d /var/www/html/xmatereact.backup ]; then
+              sudo rsync -a --delete /var/www/html/xmatereact.backup/ /var/www/html/xmatereact
+              sudo systemctl restart nginx
+              echo 'Rollback complete'
             else
-              echo "Rollback health check failed. Exiting with error."
+              echo 'No backup found to rollback to'
               exit 1
             fi
-          fi
+          "
