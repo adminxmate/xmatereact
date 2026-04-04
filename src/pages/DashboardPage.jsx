@@ -8,7 +8,16 @@ import { resendVerification } from "../services/authService";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, logout, needs_verification_warning, is_suspended, is_verified, refreshUser } = useAuth();
+  const { 
+    isLoggedIn, 
+    logout, 
+    needs_verification_warning, 
+    is_suspended, 
+    is_verified, 
+    is_admin,
+    users,
+    refreshUser 
+  } = useAuth();
 
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
@@ -93,6 +102,60 @@ const DashboardPage = () => {
               >
                 {resendLoading ? "Sending..." : "Re-verify Now"}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Dashboard: User Management */}
+        {is_admin && (
+          <div className="w-full max-w-5xl bg-[#111111] p-6 rounded shadow-2xl border border-black space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white uppercase italic tracking-wider flex items-center gap-2">
+                User Management <span className="text-xs bg-red-600 px-2 py-0.5 rounded-full not-italic tracking-normal">Admin View</span>
+              </h2>
+            </div>
+            
+            <div className="overflow-x-auto rounded border border-gray-800">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-black text-gray-400 uppercase font-bold tracking-widest text-[10px] border-b border-gray-800">
+                  <tr>
+                    <th className="p-3">User ID</th>
+                    <th className="p-3">Username</th>
+                    <th className="p-3">Email</th>
+                    <th className="p-3">Role</th>
+                    <th className="p-3">Verified</th>
+                    <th className="p-3">Created At</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-900">
+                  {users && users.length > 0 ? (
+                    users.map((u) => (
+                      <tr key={u.id} className="hover:bg-white/5 transition border-b border-gray-900/50">
+                        <td className="p-3 text-gray-500">{u.id}</td>
+                        <td className="p-3 font-bold text-gray-200 uppercase">{u.username || u.display_name || "---"}</td>
+                        <td className="p-3 text-gray-400">{u.email}</td>
+                        <td className="p-3">
+                          <span className={`${u.role === 'admin' ? 'text-red-400' : 'text-blue-400'} font-bold uppercase`}>
+                            {u.role || 'user'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          {u.is_verified ? (
+                            <span className="text-green-500 font-bold uppercase">Yes</span>
+                          ) : (
+                            <span className="text-amber-500 font-bold uppercase">No</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-gray-500">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "---"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="p-10 text-center text-gray-600 italic">No users found or loading...</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

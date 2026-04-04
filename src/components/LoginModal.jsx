@@ -154,8 +154,11 @@ const LoginModal = () => {
             </div>
 
             {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">
-                {error}
+              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100 animate-shake">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  <span>{error}</span>
+                </div>
               </div>
             )}
 
