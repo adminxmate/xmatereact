@@ -1,0 +1,106 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - ci/setup-github-actions
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}-v1
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test --if-present
+      - name: Build
+        run: npm run build --if-present
+      - name: Persist build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: build
+
+  deploy-to-ec2:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.5
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: build
+      - name: Backup current live
+        run: |
+          REMOTE_USER="${{ secrets.EC2_USER }}"
+          REMOTE_HOST="${{ secrets.EC2_HOST }}"
+          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo cp -a /var/www/html/xmatereact /var/www/html/xmatereact.backup || true"
+      - name: Rsync build to EC2
+        run: |
+          SOURCE_DIR="${GITHUB_WORKSPACE}/build"
+          REMOTE_DIR="/var/www/html/xmatereact"
+          REMOTE_USER="${{ secrets.EC2_USER }}"
+          REMOTE_HOST="${{ secrets.EC2_HOST }}"
+          if [ -d "$SOURCE_DIR" ]; then
+            rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" "$SOURCE_DIR/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_DIR"
+          else
+            echo "Build directory not found"; exit 1
+          fi
+      - name: Restart remote service
+        run: |
+          REMOTE_USER="${{ secrets.EC2_USER }}"
+          REMOTE_HOST="${{ secrets.EC2_HOST }}"
+          ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo systemctl restart nginx"
+      - name: Health check
+        if: ${{ secrets.APP_URL != '' }}
+        run: |
+          HEALTH_URL="${{ secrets.APP_URL }}"
+          echo "Performing health checks against ${HEALTH_URL}"
+          set -e
+          for i in 1 2 3; do
+            if curl -fsS "$HEALTH_URL"; then
+              echo "Health check passed"
+              HEALTH_OK=1
+              break
+            else
+              echo "Health check attempt $i failed"
+              sleep 5
+            fi
+          done
+          if [ -z "$HEALTH_OK" ]; then
+            echo "Health check failed, attempting rollback"
+            REMOTE_USER="${{ secrets.EC2_USER }}"
+            REMOTE_HOST="${{ secrets.EC2_HOST }}"
+            ssh -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "sudo rsync -a /var/www/html/xmatereact.backup/ /var/www/html/xmatereact; sudo systemctl restart nginx"
+            if curl -fsS "$HEALTH_URL"; then
+              echo "Rollback health check passed"
+            else
+              echo "Rollback health check failed. Exiting with error."
+              exit 1
+            fi
+          fi
