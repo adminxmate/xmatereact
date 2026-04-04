@@ -1,9 +1,11 @@
 import axios from "axios";
 
 const apiurl = import.meta.env.VITE_API_URL;
+// Ensure no redundant slashes: strip trailing / from apiurl if present.
+const cleanApiUrl = apiurl?.endsWith("/") ? apiurl.slice(0, -1) : apiurl;
 
 const API = axios.create({
-  baseURL: `${apiurl}api/v1`,
+  baseURL: `${cleanApiUrl}/api/v1`,
 });
 
 API.interceptors.request.use((config) => {
@@ -18,13 +20,27 @@ API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isAuthPath = originalRequest.url?.includes("/auth/");
+    
+    // Log for debugging
+    if (error.response?.status === 401) {
+      console.warn(`[API] 401 Unauthorized: ${originalRequest.url}`, {
+        hasToken: !!localStorage.getItem("token"),
+        isAuthPath
+      });
+    }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthPath) {
       originalRequest._retry = true;
 
-      window.dispatchEvent(new CustomEvent("open-login-modal"));
+      // Only dispatch if not already refreshing
+      if (!window.__is_auth_refreshing) {
+        window.__is_auth_refreshing = true;
+        window.dispatchEvent(new CustomEvent("open-login-modal", { detail: { reason: "auto" }}));
+      }
 
       const newToken = await waitForToken();
+      window.__is_auth_refreshing = false;
 
       if (newToken) {
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -38,12 +54,33 @@ API.interceptors.response.use(
 
 function waitForToken() {
   return new Promise((resolve) => {
-    const onLogin = () => {
+    const onLoginSuccess = () => {
       const token = localStorage.getItem("token");
-      window.removeEventListener("login-success", onLogin);
+      cleanup();
       resolve(token);
     };
-    window.addEventListener("login-success", onLogin);
+
+    const cleanup = () => {
+      window.removeEventListener("login-success", onLoginSuccess);
+      window.removeEventListener("auth-state-changed", onAuthStateChange);
+    };
+
+    const onAuthStateChange = (e) => {
+      if (e.detail?.loggedIn) {
+        const token = localStorage.getItem("token");
+        cleanup();
+        resolve(token);
+      }
+    };
+
+    window.addEventListener("login-success", onLoginSuccess);
+    window.addEventListener("auth-state-changed", onAuthStateChange);
+    
+    // Safety timeout
+    setTimeout(() => {
+      cleanup();
+      resolve(null);
+    }, 60000); // 1 minute
   });
 }
 

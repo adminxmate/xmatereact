@@ -8,16 +8,36 @@ export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchingDetails, setFetchingDetails] = useState(false);
 
   const fetchAuthDetails = async () => {
-    const roleRes = await getRole();
-    if (roleRes.success) {
-      setRole(roleRes.data.role);
+    if (fetchingDetails) return;
+    setFetchingDetails(true);
+    try {
+      const roleRes = await getRole();
+      if (roleRes.success) {
+        setRole(roleRes.data.role);
+        // If admin, fetch all users
+        if (roleRes.data.role === "admin") {
+          fetchUsersList();
+        }
+      }
+      const profileRes = await getUserProfile();
+      if (profileRes.success) {
+        setProfile(profileRes.data);
+      }
+    } finally {
+      setFetchingDetails(false);
     }
-    const profileRes = await getUserProfile();
-    if (profileRes.success) {
-      setProfile(profileRes.data);
+  };
+
+  const fetchUsersList = async () => {
+    const { getUsers } = await import("../services/authService");
+    const res = await getUsers();
+    if (res.success) {
+      setUsers(res.data);
     }
   };
 
@@ -100,6 +120,7 @@ export const useAuth = () => {
     user, 
     role, 
     profile, 
+    users,
     loading,
     is_admin,
     is_owner,
@@ -108,6 +129,7 @@ export const useAuth = () => {
     needs_verification_warning,
     is_suspended,
     refreshUser,
+    fetchUsersList,
     logout: handleLogout 
   };
 };

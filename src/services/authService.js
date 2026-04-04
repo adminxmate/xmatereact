@@ -31,30 +31,33 @@ export const firebaseLogin = async (email, password) => {
 
 // 2. Custom Backend Login
 export const login = async (email, password) => {
-  // 1. Attempt Firebase Login first (covers SSO reset users)
+  // 1. Attempt Custom Backend Login first (covers legacy & primary users)
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const token = await userCredential.user.getIdToken();
-    localStorage.setItem("token", token);
-    dispatchAuthChange(true);
-    return { success: true, data: { user: userCredential.user, token } };
-  } catch (fbError) {
-    // 2. Fallback to Custom Backend (covers legacy users)
+    const response = await API.post("/auth/login", { email, password });
+    const { token, user } = response.data.data || response.data;
+    if (token) {
+      localStorage.setItem("token", token);
+      dispatchAuthChange(true);
+      return { success: true, data: { user, token } };
+    }
+    return { success: false, message: "No token received from backend" };
+  } catch (backendError) {
+    // 2. Fallback to Firebase Login (covers SSO/Firebase-only users)
     try {
-      const response = await API.post("/auth/login", { email, password });
-      const { token, user } = response.data.data || response.data;
-      if (token) {
-        localStorage.setItem("token", token);
-        dispatchAuthChange(true);
-        return { success: true, data: { user, token } };
-      }
-      return { success: false, message: "No token received" };
-    } catch (error) {
-      if (error.response?.status === 403) {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+      localStorage.setItem("token", token);
+      dispatchAuthChange(true);
+      return { success: true, data: { user: userCredential.user, token } };
+    } catch (fbError) {
+      if (backendError.response?.status === 403) {
         return { success: false, message: "Please verify your email before logging in.", needsVerification: true };
       }
-      // Return appropriate error message
-      const finalMsg = error.response?.data?.message || fbError.message || "Login failed";
+      
+      // Determine best error message to show
+      const backendMsg = backendError.response?.data?.message || backendError.response?.data?.error;
+      const finalMsg = backendMsg || fbError.message || "Login failed. Please check your credentials.";
+      
       return { success: false, message: finalMsg };
     }
   }
@@ -106,6 +109,15 @@ export const registerUser = async (username, email, password) => {
   }
 };
 
+export const getUsers = async () => {
+  try {
+    const response = await API.get("/auth/users");
+    return { success: true, data: response.data.data || response.data };
+  } catch (error) {
+    return { success: false, message: error.response?.data?.message || error.message };
+  }
+};
+
 export const requestPasswordReset = async (email) => {
   try {
     await sendPasswordResetEmail(auth, email);
@@ -141,15 +153,25 @@ export const handleSSOCallback = async () => {
 };
 
 export const verifyToken = async () => {
-  const user = auth.currentUser;
-  if (user) {
-    return { valid: true, user };
+  try {
+    // 1. Try Firebase current user (fastest)
+    const user = auth.currentUser;
+    if (user) {
+      return { valid: true, user };
+    }
+
+    // 2. Check localStorage token
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return { valid: false };
+    }
+
+    // 3. Assume valid for initial render, interceptor handles 401s
+    return { valid: true };
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    return { valid: false };
   }
-  const token = localStorage.getItem("token");
-  if (token) {
-    return { valid: true }; // Minimal check
-  }
-  return { valid: false };
 }
 
 export const resendVerification = async () => {
