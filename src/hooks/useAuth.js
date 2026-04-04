@@ -3,41 +3,94 @@ import { logout, getRole, getUserProfile } from "../services/authService";
 import { auth } from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
+let globalAuthCache = null;
+let globalAuthPromise = null;
+
+export const clearAuthCache = () => {
+  globalAuthCache = null;
+  globalAuthPromise = null;
+};
+
 export const useAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [role, setRole] = useState(globalAuthCache?.role || null);
+  const [profile, setProfile] = useState(globalAuthCache?.profile || null);
+  const [users, setUsers] = useState(globalAuthCache?.users || []);
   const [loading, setLoading] = useState(true);
-  const [fetchingDetails, setFetchingDetails] = useState(false);
 
-  const fetchAuthDetails = useCallback(async () => {
-    if (fetchingDetails) return;
-    setFetchingDetails(true);
-    try {
-      const roleRes = await getRole();
-      if (roleRes.success) {
-        setRole(roleRes.data.role);
-        // If admin, fetch all users
-        if (roleRes.data.role === "admin") {
-          fetchUsersList();
-        }
-      }
-      const profileRes = await getUserProfile();
-      if (profileRes.success) {
-        setProfile(profileRes.data);
-      }
-    } finally {
-      setFetchingDetails(false);
+  const fetchAuthDetails = useCallback(async (force = false) => {
+    if (force) {
+      clearAuthCache();
     }
-  }, [fetchingDetails]);
+    if (globalAuthCache && !force) {
+      setRole(globalAuthCache.role);
+      setProfile(globalAuthCache.profile);
+      if (globalAuthCache.role === "admin") {
+        setUsers(globalAuthCache.users || []);
+      }
+      return;
+    }
+
+    if (!globalAuthPromise) {
+      globalAuthPromise = (async () => {
+        const cacheObj = { role: null, profile: null, users: [] };
+        try {
+          const roleRes = await getRole();
+          if (roleRes && roleRes.success) {
+            cacheObj.role = roleRes.data.role;
+            if (cacheObj.role === "admin") {
+              const { getUsers } = await import("../services/authService");
+              const userRes = await getUsers();
+              if (userRes && userRes.success) {
+                cacheObj.users = userRes.data;
+              } else {
+                alert(`Failed to fetch users: ${userRes?.message || "No response received"}`);
+              }
+            }
+          } else {
+            alert(`Failed to fetch role: ${roleRes?.message || "No response received"}`);
+          }
+
+          const profileRes = await getUserProfile();
+          if (profileRes && profileRes.success) {
+            cacheObj.profile = profileRes.data;
+          } else {
+            alert(`Failed to fetch user profile: ${profileRes?.message || "No response received"}`);
+          }
+
+          globalAuthCache = cacheObj;
+          return cacheObj;
+        } catch (error) {
+          globalAuthPromise = null;
+          alert(`Error fetching auth details: ${error.message || "No response received"}`);
+          throw error;
+        }
+      })();
+    }
+
+    try {
+      const data = await globalAuthPromise;
+      setRole(data.role);
+      setProfile(data.profile);
+      if (data.role === "admin") {
+        setUsers(data.users || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const fetchUsersList = async () => {
     const { getUsers } = await import("../services/authService");
     const res = await getUsers();
     if (res.success) {
+      if (globalAuthCache) {
+        globalAuthCache.users = res.data;
+      }
       setUsers(res.data);
+    } else {
+      alert(`Failed to fetch users: ${res?.message || "No response received"}`);
     }
   };
 
@@ -46,7 +99,7 @@ export const useAuth = () => {
       await auth.currentUser.reload();
       setUser({ ...auth.currentUser });
     }
-    await fetchAuthDetails();
+    await fetchAuthDetails(true);
   };
 
   useEffect(() => {
@@ -59,7 +112,6 @@ export const useAuth = () => {
         setUser(currentUser);
         await fetchAuthDetails();
       } else {
-        // ... (existing localStorage check)
         const token = localStorage.getItem("token");
         if (token && !auth.currentUser) {
            setIsLoggedIn(true);
@@ -69,6 +121,7 @@ export const useAuth = () => {
            setUser(null);
            setRole(null);
            setProfile(null);
+           clearAuthCache();
         }
       }
       setLoading(false);
@@ -83,6 +136,7 @@ export const useAuth = () => {
         setUser(null);
         setRole(null);
         setProfile(null);
+        clearAuthCache();
       }
     };
 
@@ -95,6 +149,7 @@ export const useAuth = () => {
   }, [fetchAuthDetails]);
 
   const handleLogout = () => {
+    clearAuthCache();
     logout();
   };
 
