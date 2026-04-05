@@ -109,14 +109,7 @@ export const registerUser = async (username, email, password) => {
   }
 };
 
-export const getUsers = async () => {
-  try {
-    const response = await API.get("/auth/users");
-    return { success: true, data: response.data.data || response.data };
-  } catch (error) {
-    return { success: false, message: error.response?.data?.message || error.message };
-  }
-};
+
 
 export const requestPasswordReset = async (email) => {
   try {

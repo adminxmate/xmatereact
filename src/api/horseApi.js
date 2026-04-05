@@ -22,8 +22,8 @@ API.interceptors.response.use(
     const originalRequest = error.config;
     const isAuthPath = originalRequest.url?.includes("/auth/");
     
-    // Log for debugging
-    if (error.response?.status === 401) {
+    // Log for debugging (except for login which triggers expected 401s during fallback)
+    if (error.response?.status === 401 && !originalRequest.url?.includes("/auth/login")) {
       console.warn(`[API] 401 Unauthorized: ${originalRequest.url}`, {
         hasToken: !!localStorage.getItem("token"),
         isAuthPath
