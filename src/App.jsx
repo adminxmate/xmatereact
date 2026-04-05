@@ -4,15 +4,35 @@ import ProtectedRoute from "./components/Layout/ProtectedRoute";
 import LoadingFallback from "./components/LoadingFallback";
 import GlobalErrorBoundary from "./components/GlobalErrorBoundary";
 
-const LandingPage = React.lazy(() => import("./pages/LandingPage"));
-const HorseDataTable = React.lazy(() => import("./pages/HorseDataTable"));
-const PlansPage = React.lazy(() => import("./pages/PlansPage"));
-const ContactPage = React.lazy(() => import("./pages/ContactPage"));
-const PrivacyPolicyPage = React.lazy(() => import("./pages/PrivacyPolicyPage"));
-const CustomerAgreementPage = React.lazy(() => import("./pages/CustomerAgreementPage"));
-const RealPedigreePage = React.lazy(() => import("./pages/RealPedigreePage"));
-const HypotheticalPedigreePage = React.lazy(() => import("./pages/HypotheticalPedigreePage"));
-const Dashboard = React.lazy(() => import("./pages/DashboardPage"));
+// Custom wrapper for React.lazy to automatically reload the page on chunk loading failures
+// This prevents errors where users with stale indexed html try to fetch a chunk that's been removed in a recent deployment
+const lazyWithRetry = (componentImport) =>
+  React.lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem("page-has-been-force-refreshed") || "false"
+    );
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem("page-has-been-force-refreshed", "false");
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem("page-has-been-force-refreshed", "true");
+        window.location.reload();
+      }
+      throw error;
+    }
+  });
+
+const LandingPage = lazyWithRetry(() => import("./pages/LandingPage"));
+const HorseDataTable = lazyWithRetry(() => import("./pages/HorseDataTable"));
+const PlansPage = lazyWithRetry(() => import("./pages/PlansPage"));
+const ContactPage = lazyWithRetry(() => import("./pages/ContactPage"));
+const PrivacyPolicyPage = lazyWithRetry(() => import("./pages/PrivacyPolicyPage"));
+const CustomerAgreementPage = lazyWithRetry(() => import("./pages/CustomerAgreementPage"));
+const RealPedigreePage = lazyWithRetry(() => import("./pages/RealPedigreePage"));
+const HypotheticalPedigreePage = lazyWithRetry(() => import("./pages/HypotheticalPedigreePage"));
+const Dashboard = lazyWithRetry(() => import("./pages/DashboardPage"));
 
 import LoginModal from "./components/LoginModal";
 import SignupModal from "./components/SignupModal";
