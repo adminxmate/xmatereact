@@ -16,7 +16,6 @@ export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(globalAuthCache?.role || null);
   const [profile, setProfile] = useState(globalAuthCache?.profile || null);
-  const [users, setUsers] = useState(globalAuthCache?.users || []);
   const [loading, setLoading] = useState(true);
 
   const fetchAuthDetails = useCallback(async (force = false) => {
@@ -26,28 +25,16 @@ export const useAuth = () => {
     if (globalAuthCache && !force) {
       setRole(globalAuthCache.role);
       setProfile(globalAuthCache.profile);
-      if (globalAuthCache.role === "admin") {
-        setUsers(globalAuthCache.users || []);
-      }
       return;
     }
 
     if (!globalAuthPromise) {
       globalAuthPromise = (async () => {
-        const cacheObj = { role: null, profile: null, users: [] };
+        const cacheObj = { role: null, profile: null };
         try {
           const roleRes = await getRole();
           if (roleRes && roleRes.success) {
             cacheObj.role = roleRes.data.role;
-            if (cacheObj.role === "admin") {
-              const { getUsers } = await import("../services/authService");
-              const userRes = await getUsers();
-              if (userRes && userRes.success) {
-                cacheObj.users = userRes.data;
-              } else {
-                alert(`Failed to fetch users: ${userRes?.message || "No response received"}`);
-              }
-            }
           } else {
             alert(`Failed to fetch role: ${roleRes?.message || "No response received"}`);
           }
@@ -73,26 +60,12 @@ export const useAuth = () => {
       const data = await globalAuthPromise;
       setRole(data.role);
       setProfile(data.profile);
-      if (data.role === "admin") {
-        setUsers(data.users || []);
-      }
     } catch (e) {
       console.error(e);
     }
   }, []);
 
-  const fetchUsersList = async () => {
-    const { getUsers } = await import("../services/authService");
-    const res = await getUsers();
-    if (res.success) {
-      if (globalAuthCache) {
-        globalAuthCache.users = res.data;
-      }
-      setUsers(res.data);
-    } else {
-      alert(`Failed to fetch users: ${res?.message || "No response received"}`);
-    }
-  };
+
 
   const refreshUser = async () => {
     if (auth.currentUser) {
@@ -175,7 +148,6 @@ export const useAuth = () => {
     user, 
     role, 
     profile, 
-    users,
     loading,
     is_admin,
     is_owner,
@@ -184,7 +156,6 @@ export const useAuth = () => {
     needs_verification_warning,
     is_suspended,
     refreshUser,
-    fetchUsersList,
     logout: handleLogout 
   };
 };
