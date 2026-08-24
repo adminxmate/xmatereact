@@ -192,10 +192,10 @@ export const getRealPedigree = async (horseId, gen = 3) => {
   }
 };
 
-export const getHypotheticalPedigree = async (sireId, damId) => {
+export const getHypotheticalPedigree = async (sireId, damId, gen = 2) => {
   try {
     const response = await API.get("/horses/hypo", {
-      params: { sireid: sireId, damid: damId },
+      params: { sireid: sireId, damid: damId, gen },
     });
     return response.data;
   } catch (error) {

@@ -3,6 +3,7 @@ import MainLayout from "../components/Layout/MainLayout";
 import { Loader2 } from "lucide-react";
 import { getCurrencySymbol, convertCurrency } from "../utils/currency";
 import { convertPrice } from "../utils/annualprice";
+import API from "../api/horseApi";
 
 const PlansPage = () => {
   const [plans, setPlans] = useState([]);
@@ -16,9 +17,8 @@ const PlansPage = () => {
     const fetchPlans = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://haves.co.in/api/v1/plans");
-        const data = await res.json();
-        setPlans(data);
+        const res = await API.get("/plans");
+        setPlans(res.data);
       } catch (err) {
         console.error("Error fetching plans:", err);
       } finally {

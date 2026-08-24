@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import { useAuth } from "../hooks/useAuth";
 import { downloadImage, downloadPDF } from "../utils/exportUtils";
+import { getRealPedigree } from "../api/horseApi";
 
 const RealPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,10 +38,8 @@ const RealPedigreePage = () => {
       }
 
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}api/v1/horses/real?horseid=${horseId}&gen=${gen}`
-        );
-        setPedigree(response.data);
+        const data = await getRealPedigree(horseId, gen);
+        setPedigree(data);
       } catch (err) {
         console.error("Fetch error:", err);
         setError(

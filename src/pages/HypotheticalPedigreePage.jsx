@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import MainLayout from "../components/Layout/MainLayout";
 import { useAuth } from "../hooks/useAuth";
 import { downloadImage, downloadPDF } from "../utils/exportUtils";
+import { getHypotheticalPedigree } from "../api/horseApi";
 
 const HypotheticalPedigreePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,10 +41,8 @@ const HypotheticalPedigreePage = () => {
       }
 
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}api/v1/horses/hypo?sireid=${sireId}&damid=${damId}&gen=${gen - 1}`
-        );
-        setPedigree(response.data);
+        const data = await getHypotheticalPedigree(sireId, damId, gen - 1);
+        setPedigree(data);
       } catch (err) {
         console.error("Hypothetical pedigree fetch error:", err);
         setError(
